@@ -1,4 +1,4 @@
-package com.tufin.tagusppolicy.cf.dataTypes.json;
+package com.tufin.lib.dataTypes.securitygroup;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;

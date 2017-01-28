@@ -1,4 +1,4 @@
-package com.tufin.tagusppolicy.cf.dataTypes.xml;
+package com.tufin.lib.dataTypes.accessrequest;
 
 import javax.xml.bind.annotation.XmlElement;
 

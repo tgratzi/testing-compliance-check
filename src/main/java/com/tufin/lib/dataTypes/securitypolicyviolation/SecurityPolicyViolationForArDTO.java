@@ -1,4 +1,4 @@
-package com.tufin.tagusppolicy.st.dataTypes;
+package com.tufin.lib.dataTypes.securitypolicyviolation;
 
 import org.json.simple.JSONObject;
 

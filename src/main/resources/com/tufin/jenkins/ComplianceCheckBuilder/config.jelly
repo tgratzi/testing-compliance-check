@@ -1,24 +1,24 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:entry title="${%st.ip.title}" field="ip">
+        <f:textbox/>
+    </f:entry>
 
-  <f:entry title="${%st.ip.title}" field="ip">
-    <f:textbox field="ip"/>
-  </f:entry>
+    <f:entry title="${%st.username.title}" field="username">
+        <f:textbox/>
+    </f:entry>
 
-  <f:entry title="${%st.username.title}" field="username">
-    <f:textbox field="username"/>
-  </f:entry>
+    <f:entry title="${%st.password.title}" field="password">
+        <f:password/>
+    </f:entry>
 
-  <f:entry title="${%st.password.title}" field="password">
-    <f:password field="password"/>
-  </f:entry>
+    <f:entry title="${%policy.id.title}" >
+        <f:textbox/>
+    </f:entry>
 
-  <f:entry title="${%policy.id.title}" >
-    <f:textbox field="policyId"/>
-  </f:entry>
-
-  <f:validateButton
+    <f:validateButton
           title="${%tufin.connection.test.title}" progress="${%tufin.connection.test.progress}"
-          method="testTufinConnection" with="ip,password,username"/>
+          method="testTufinConnection" with="ip,password,username"
+    />
 
 </j:jelly>

@@ -1,8 +1,7 @@
-package com.tufin.tagusppolicy.common;
+package com.tufin.lib.helpers;
 
 
 import java.io.OutputStream;
-import java.io.PrintStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;

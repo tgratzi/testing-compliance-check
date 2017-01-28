@@ -1,12 +1,12 @@
 package com.tufin.jenkins;
 
-import com.tufin.tagusppolicy.cf.CloudFormationTemplateProcessor;
-import com.tufin.tagusppolicy.cf.JaxbAccessRequestBuilder;
-import com.tufin.tagusppolicy.cf.dataTypes.json.SecurityGroup;
-import com.tufin.tagusppolicy.cf.dataTypes.xml.AccessRequest;
-import com.tufin.tagusppolicy.common.HttpHelper;
-import com.tufin.tagusppolicy.st.ViolationHelper;
-import com.tufin.tagusppolicy.st.dataTypes.SecurityPolicyViolationsForMultiArDTO;
+import com.tufin.lib.helpers.CloudFormationTemplateProcessor;
+import com.tufin.lib.helpers.JaxbAccessRequestBuilder;
+import com.tufin.lib.dataTypes.securitygroup.SecurityGroup;
+import com.tufin.lib.dataTypes.accessrequest.AccessRequest;
+import com.tufin.lib.helpers.HttpHelper;
+import com.tufin.lib.helpers.ViolationHelper;
+import com.tufin.lib.dataTypes.securitypolicyviolation.SecurityPolicyViolationsForMultiArDTO;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Extension;
@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
@@ -196,16 +195,6 @@ public class ComplianceCheckBuilder extends Builder {
 
             }
             return FormValidation.ok();
-        }
-
-        /**
-         * This method returns true if the global configuration says we should speak French.
-         *
-         * The method name is bit awkward because global.jelly calls this method to determine
-         * the initial state of the checkbox by the naming convention.
-         */
-        public boolean getUseFrench() {
-            return true;
         }
     }
 }

@@ -1,14 +1,13 @@
-package com.tufin.tagusppolicy.cf;
+package com.tufin.lib.helpers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import com.tufin.tagusppolicy.cf.dataTypes.json.SecurityGroup;
+import com.tufin.lib.dataTypes.securitygroup.SecurityGroup;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;

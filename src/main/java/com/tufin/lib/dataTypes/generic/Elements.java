@@ -1,4 +1,4 @@
-package com.tufin.tagusppolicy.common;
+package com.tufin.lib.dataTypes.generic;
 
 
 public enum Elements {

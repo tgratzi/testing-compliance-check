@@ -1,11 +1,10 @@
-package com.tufin.tagusppolicy.cf;
+package com.tufin.lib.helpers;
 
 
-import com.tufin.tagusppolicy.cf.dataTypes.PreDefinedService;
-import com.tufin.tagusppolicy.cf.dataTypes.Protocol;
-import com.tufin.tagusppolicy.cf.dataTypes.json.SecurityGroup;
-import com.tufin.tagusppolicy.cf.dataTypes.xml.*;
-import com.tufin.tagusppolicy.common.SecurityGroupToSubnet;
+import com.tufin.lib.dataTypes.generic.PreDefinedService;
+import com.tufin.lib.dataTypes.generic.Protocol;
+import com.tufin.lib.dataTypes.securitygroup.SecurityGroup;
+import com.tufin.lib.dataTypes.accessrequest.*;
 import org.apache.commons.net.util.SubnetUtils;
 
 import javax.xml.bind.JAXBContext;

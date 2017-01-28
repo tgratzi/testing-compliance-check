@@ -1,4 +1,4 @@
-package com.tufin.tagusppolicy.cf.dataTypes;
+package com.tufin.lib.dataTypes.generic;
 
 
 public enum PreDefinedService {

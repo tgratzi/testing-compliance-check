@@ -1,4 +1,4 @@
-package com.tufin.tagusppolicy.common;
+package com.tufin.lib.helpers;
 
 import org.apache.commons.net.util.SubnetUtils;
 

@@ -1,9 +1,7 @@
-package com.tufin.tagusppolicy.st;
+package com.tufin.lib.helpers;
 
 
-import com.tufin.tagusppolicy.common.BuildComplianceLog;
-import com.tufin.tagusppolicy.common.HttpHelper;
-import com.tufin.tagusppolicy.st.dataTypes.SecurityPolicyViolationsForMultiArDTO;
+import com.tufin.lib.dataTypes.securitypolicyviolation.SecurityPolicyViolationsForMultiArDTO;
 import org.json.simple.JSONObject;
 
 import java.io.IOException;
