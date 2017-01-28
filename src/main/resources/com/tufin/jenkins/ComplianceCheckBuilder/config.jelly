@@ -12,8 +12,8 @@
         <f:password/>
     </f:entry>
 
-    <f:entry title="${%policy.id.title}" >
-        <f:textbox/>
+    <f:entry title="${%policy.id.title}" field="policyId">
+        <f:select />
     </f:entry>
 
     <f:validateButton

@@ -1,23 +1,21 @@
 package com.tufin.lib.dataTypes.securitypolicyviolation;
 
+import com.tufin.lib.dataTypes.generic.Elements;
 import org.json.simple.JSONObject;
 
 
 public class SecurityPolicyViolationForArDTO {
-    private static final String VIOLATIONS = "violations";
-    private static final String ACCESS_REQUEST_ORDER = "access_request_order";
-    private static final String SECURITY_POLICY_VIOLATIONS_FOR_AR = "security_policy_violations_for_ar";
     private int access_request_order;
     private ViolationDTO violations;
 
     public SecurityPolicyViolationForArDTO(JSONObject json) {
         System.out.println("Parsing security policy violation for AR");
-        this.access_request_order = Integer.parseInt(json.get(ACCESS_REQUEST_ORDER).toString());
-        Object violations = json.get(VIOLATIONS);
+        this.access_request_order = Integer.parseInt(json.get(Elements.ACCESS_REQUEST_ORDER).toString());
+        Object violations = json.get(Elements.VIOLATIONS);
         if (violations instanceof String) {
             this.violations = null;
         } else {
-            this.violations = new ViolationDTO((JSONObject) json.get(VIOLATIONS));
+            this.violations = new ViolationDTO((JSONObject) json.get(Elements.VIOLATIONS));
         }
     }
 

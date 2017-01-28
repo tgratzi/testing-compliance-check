@@ -13,7 +13,6 @@ public class IPNetwork extends AccessRequestAbstract {
         net.setIP(ip);
         net.setMask(mask);
         this.network = net;
-
     }
 
     public String prettyPrint() {

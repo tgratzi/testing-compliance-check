@@ -2,6 +2,7 @@ package com.tufin.lib.helpers;
 
 
 import com.tufin.lib.dataTypes.securitypolicyviolation.SecurityPolicyViolationsForMultiArDTO;
+import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsResponseDTO;
 import org.json.simple.JSONObject;
 
 import java.io.IOException;
@@ -10,6 +11,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ViolationHelper {
+    private static final String USP_URL = "https://{0}/securetrack/api/violations/access_requests/sync.json?use_topology=false&ar_domain_mode=false";
+    private static final String TAG_URL = "https://{0}/securetrack/api/tagpolicy/violation_check?policy_external_id=";
+    private static final String APPLICATION_XML = "application/xml";
+    private static final String APPLICATION_JSON = "application/json";
+
     private Logger logger;
 
     public ViolationHelper() {
@@ -22,17 +28,17 @@ public class ViolationHelper {
     }
 
     public SecurityPolicyViolationsForMultiArDTO checkUSPAccessRequestViolation(HttpHelper stHelper, String str) throws IOException{
-        final String uspURL = "https://{0}/securetrack/api/violations/access_requests/sync.json?use_topology=false&ar_domain_mode=false";
-        logger.info("Checking USP access request violation");
-        JSONObject response = new JSONObject();
+        System.out.println("Checking USP access request violation");
         SecurityPolicyViolationsForMultiArDTO violationMultiAr = null;
-        response = stHelper.post(uspURL, str);
+        JSONObject response = stHelper.post(USP_URL, str, APPLICATION_XML);
         violationMultiAr = new SecurityPolicyViolationsForMultiArDTO(response);
         return violationMultiAr;
     }
 
-    public void checkTagViolation(HttpHelper stHelper) throws IOException {
-        final String tagURL = "https://{0}/securetrack/api/tagpolicy/violation_check.json?policy_external_id={1}";
-        logger.info("Tag Violation");
+    public TagPolicyViolationsResponseDTO checkTagViolation(HttpHelper stHelper, String body, String policyId) throws IOException {
+        System.out.println("Tag Violation");
+        JSONObject response = stHelper.post(TAG_URL + policyId, body, APPLICATION_JSON);
+        TagPolicyViolationsResponseDTO tagPolicyViolationsResponse = new TagPolicyViolationsResponseDTO(response);
+        return tagPolicyViolationsResponse;
     }
 }

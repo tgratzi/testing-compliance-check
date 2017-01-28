@@ -27,6 +27,6 @@ public class ImplicitService extends AccessRequestAbstract {
 
     public String prettyPrint() {
         String portProtocolStr = service.getService();
-        return "Service: " + name + ", " + portProtocolStr;
+        return name + ", " + portProtocolStr;
     }
 }

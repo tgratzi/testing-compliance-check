@@ -1,5 +1,8 @@
 package com.tufin.jenkins;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsCheckRequestDTO;
+import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsResponseDTO;
 import com.tufin.lib.helpers.CloudFormationTemplateProcessor;
 import com.tufin.lib.helpers.JaxbAccessRequestBuilder;
 import com.tufin.lib.dataTypes.securitygroup.SecurityGroup;
@@ -14,6 +17,7 @@ import hudson.model.*;
 import hudson.util.FormValidation;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.util.ListBoxModel;
 import org.apache.commons.net.util.SubnetUtils;
 import org.json.simple.parser.ParseException;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -26,6 +30,8 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+
+import static java.util.Arrays.asList;
 
 
 /**
@@ -59,7 +65,6 @@ public class ComplianceCheckBuilder extends Builder {
         this.username = username;
         this.password = password;
         this.policyId = policyId;
-        LOGGER.info(ip);
     }
 
     /**
@@ -85,37 +90,76 @@ public class ComplianceCheckBuilder extends Builder {
 
     private String green(String message) { return "\033[32m" + message + "\033[0m"; }
 
+    private String formatMessage(String securityGroupName, AccessRequest accessRequest, String status) {
+        StringBuffer errorMsg = new StringBuffer();
+        errorMsg.append("----------------------------------------------------------------------").append('\n');
+        errorMsg.append("Status: ").append(status).append('\n');
+        errorMsg.append("Security Group: ").append(securityGroupName).append('\n');
+        errorMsg.append("Source: ").append(accessRequest.getSource()).append('\n');
+        errorMsg.append("Destination: ").append(accessRequest.getDestination()).append('\n');
+        errorMsg.append("Service: ").append(accessRequest.getService()).append('\n');
+        errorMsg.append("----------------------------------------------------------------------");
+        return errorMsg.toString();
+    }
+
+    private void checkUspViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper, ViolationHelper violation,
+                                   PrintStream logger) throws IOException {
+        logger.println("Getting list of AWS security group CF object");
+        Map<String, List<SecurityGroup>> securityGroupRules = cf.getSecurityGroupRules();
+        if (securityGroupRules.isEmpty()) {
+            throw new IOException("No security group was found");
+        }
+        for(Map.Entry<String, List<SecurityGroup>> securityGroupRule :  securityGroupRules.entrySet()) {
+            logger.println(String.format("Processing security group '%s'", securityGroupRule.getKey()));
+            JaxbAccessRequestBuilder rule = new JaxbAccessRequestBuilder(securityGroupRule);
+            for (AccessRequest ar: rule.getAccessRequestList()) {
+                String accessRequestStr = rule.accessRequestBuilder(ar);
+                SecurityPolicyViolationsForMultiArDTO violationMultiAr = violation.checkUSPAccessRequestViolation(stHelper, accessRequestStr);
+                String statusMsg;
+                if (violationMultiAr.getSecurityPolicyViolationsForAr().isViolated()) {
+                    throw new IOException(formatMessage(securityGroupRule.getKey(), ar, "VIOLATION FOUND"));
+                }
+                logger.println(formatMessage(securityGroupRule.getKey(), ar, "No violation found"));
+            }
+        }
+        logger.println("Compliance check for AWS security groups pass with no violation");
+    }
+
+    private void checkTagPolicyViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper,
+                                         ViolationHelper violation, PrintStream logger) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        List<TagPolicyViolationsCheckRequestDTO> tagPolicyViolationList = cf.getTagPolicyViolationsCheckRequestList();
+        if (tagPolicyViolationList.isEmpty()) {
+            logger.println("No Instance TAGs were found in the Cloudformation template");
+        } else {
+            for (TagPolicyViolationsCheckRequestDTO tagPolicyViolation : tagPolicyViolationList) {
+                String jsonTagPolicyViolation = mapper.writeValueAsString(tagPolicyViolation);
+                TagPolicyViolationsResponseDTO tagPolicyViolationsResponse = violation.checkTagViolation(stHelper, jsonTagPolicyViolation, "tp-101");
+                logger.println(tagPolicyViolationsResponse.isViolated());
+            }
+            logger.println("Compliance check for AWS TAG Instance pass with no violation");
+        }
+    }
+
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
         try {
             PrintStream logger = listener.getLogger();
-            logger.println("Reading the Cloudformation JSON file");
+            logger.println("Reading the Cloudformation JSON files");
             List<FilePath> buildFiles = build.getWorkspace().list();
+            logger.println(String.format("Build HTTP connection to host '%s'", ip));
+            HttpHelper stHelper = new HttpHelper(ip, password, username);
             for (FilePath filePath: buildFiles) {
-                if (!filePath.getName().toLowerCase().endsWith(".json")) {
-                    continue;
-                }
-
-                logger.println("Checking template '" + filePath.getName() + "' for USP compliance.");
+                if (!filePath.getName().toLowerCase().endsWith(".json")) {continue;}
                 ViolationHelper violation = new ViolationHelper();
+                logger.println(String.format("Compliance check for Cloudformation template '%s'", filePath.getName()));
                 CloudFormationTemplateProcessor cf = new CloudFormationTemplateProcessor(filePath.getRemote());
-                for (Map.Entry<String, List<SecurityGroup>> securityGroupRule : cf.securityGroupRules.entrySet()) {
-                    JaxbAccessRequestBuilder rule = new JaxbAccessRequestBuilder(securityGroupRule);
-                    for (AccessRequest ar: rule.getAccessRequestList()) {
-                        String accessRequestStr = rule.accessRequestBuilder(ar);
-                        HttpHelper stHelper = new HttpHelper("192.168.204.161", "tzachi", "tzachi");
-                        SecurityPolicyViolationsForMultiArDTO violationMultiAr = violation.checkUSPAccessRequestViolation(stHelper, accessRequestStr);
-                        if (violationMultiAr.getSecurityPolicyViolationsForAr().isViolated()) {
-                            System.out.println(red("Violation was found"));
-                            System.out.println("Security Group: " + securityGroupRule.getKey());
-                            System.out.println("Source: " + ar.getSource());
-                            System.out.println("Destination: " + ar.getDestination());
-                            System.out.println("Service: " + ar.getService());
-                        }
-                    }
-                }
+                logger.println("Check USP violation for AWS security groups");
+                checkUspViolation(cf, stHelper, violation, logger);
+                logger.println("Check TAGs policy violations for AWS Instance");
+                checkTagPolicyViolation(cf, stHelper, violation, logger);
             }
-            logger.println(green("No violations were found, good to go"));
+            logger.println(green("No violations were found, GOOD TO GO"));
             return true;
         } catch (IOException ex) {
                 throw ex;
@@ -195,6 +239,13 @@ public class ComplianceCheckBuilder extends Builder {
 
             }
             return FormValidation.ok();
+        }
+
+        public ListBoxModel doFillPolicyIdItems(@QueryParameter String country) {
+            ListBoxModel m = new ListBoxModel();
+            for (String s : asList("A","B","C"))
+                m.add(String.format("State %s in %s", s, country),country+':'+s);
+            return m;
         }
     }
 }

@@ -1,10 +1,10 @@
 package com.tufin.lib.helpers;
 
 
+import com.tufin.lib.dataTypes.accessrequest.*;
 import com.tufin.lib.dataTypes.generic.PreDefinedService;
 import com.tufin.lib.dataTypes.generic.Protocol;
 import com.tufin.lib.dataTypes.securitygroup.SecurityGroup;
-import com.tufin.lib.dataTypes.accessrequest.*;
 import org.apache.commons.net.util.SubnetUtils;
 
 import javax.xml.bind.JAXBContext;
@@ -17,7 +17,9 @@ import java.util.List;
 import java.util.Map;
 
 public class JaxbAccessRequestBuilder {
-    List<AccessRequest> accessRequestList = new ArrayList<AccessRequest>();
+    private List<AccessRequest> accessRequestList = new ArrayList<AccessRequest>();
+
+    public JaxbAccessRequestBuilder() {}
 
     public JaxbAccessRequestBuilder(Map.Entry<String, List<SecurityGroup>> securityGroupMap) throws IOException {
         SubnetUtils sgNet = SecurityGroupToSubnet.getIP(securityGroupMap.getKey());

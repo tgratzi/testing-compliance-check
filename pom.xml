@@ -95,6 +95,11 @@
             <artifactId>commons-net</artifactId>
             <version>3.5</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.mifmif</groupId>
+            <artifactId>generex</artifactId>
+            <version>1.0.2</version>
+        </dependency>
     </dependencies>
 
 </project>
