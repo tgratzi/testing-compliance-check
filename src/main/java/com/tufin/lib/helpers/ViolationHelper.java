@@ -1,8 +1,10 @@
 package com.tufin.lib.helpers;
 
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tufin.lib.dataTypes.securitypolicyviolation.SecurityPolicyViolationsForMultiArDTO;
-import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsResponseDTO;
+import com.tufin.lib.dataTypes.tagpolicy.TagPolicyDetailedResponse;
+import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsResponse;
 import org.json.simple.JSONObject;
 
 import java.io.IOException;
@@ -13,6 +15,7 @@ import java.util.logging.Logger;
 public class ViolationHelper {
     private static final String USP_URL = "https://{0}/securetrack/api/violations/access_requests/sync.json?use_topology=false&ar_domain_mode=false";
     private static final String TAG_URL = "https://{0}/securetrack/api/tagpolicy/violation_check?policy_external_id=";
+    private static final String POLICY_URL = "https://{0}/securetrack/api/tagpolicy/policies/";
     private static final String APPLICATION_XML = "application/xml";
     private static final String APPLICATION_JSON = "application/json";
 
@@ -35,10 +38,18 @@ public class ViolationHelper {
         return violationMultiAr;
     }
 
-    public TagPolicyViolationsResponseDTO checkTagViolation(HttpHelper stHelper, String body, String policyId) throws IOException {
-        System.out.println("Tag Violation");
-        JSONObject response = stHelper.post(TAG_URL + policyId, body, APPLICATION_JSON);
-        TagPolicyViolationsResponseDTO tagPolicyViolationsResponse = new TagPolicyViolationsResponseDTO(response);
+    public TagPolicyViolationsResponse checkTagViolation(HttpHelper stHelper, String body, String policyId) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JSONObject response = (JSONObject) stHelper.post(TAG_URL + policyId, body, APPLICATION_JSON);
+        JsonNode JsonNodeResponse = mapper.convertValue(response, JsonNode.class);
+        TagPolicyViolationsResponse tagPolicyViolationsResponse = new TagPolicyViolationsResponse(JsonNodeResponse);
         return tagPolicyViolationsResponse;
+    }
+
+    public TagPolicyDetailedResponse getTagPolicies(HttpHelper stHelper) throws IOException {
+        JSONObject response = stHelper.get(POLICY_URL);
+        TagPolicyDetailedResponse tagPolicyDetailedResponse = new TagPolicyDetailedResponse(response);
+//        Map<String,String> policyNameId = tagPolicyDetailedResponse.getAllPolicyId();
+        return tagPolicyDetailedResponse;
     }
 }

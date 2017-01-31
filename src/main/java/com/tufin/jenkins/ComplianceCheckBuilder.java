@@ -1,8 +1,11 @@
 package com.tufin.jenkins;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsCheckRequestDTO;
-import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsResponseDTO;
+import com.tufin.lib.dataTypes.tagpolicy.TagPolicyDetailedResponse;
+import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolation;
+import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsCheckRequest;
+import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsResponse;
 import com.tufin.lib.helpers.CloudFormationTemplateProcessor;
 import com.tufin.lib.helpers.JaxbAccessRequestBuilder;
 import com.tufin.lib.dataTypes.securitygroup.SecurityGroup;
@@ -19,6 +22,7 @@ import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
 import org.apache.commons.net.util.SubnetUtils;
+import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
@@ -27,6 +31,7 @@ import org.kohsuke.stapler.QueryParameter;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -126,18 +131,22 @@ public class ComplianceCheckBuilder extends Builder {
     }
 
     private void checkTagPolicyViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper,
-                                         ViolationHelper violation, PrintStream logger) throws IOException {
+                                         ViolationHelper violation, PrintStream logger, String policyId) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        List<TagPolicyViolationsCheckRequestDTO> tagPolicyViolationList = cf.getTagPolicyViolationsCheckRequestList();
-        if (tagPolicyViolationList.isEmpty()) {
+        List<TagPolicyViolationsCheckRequest> instanceTagsList = cf.getInstancesTags();
+        if (instanceTagsList.isEmpty()) {
             logger.println("No Instance TAGs were found in the Cloudformation template");
         } else {
-            for (TagPolicyViolationsCheckRequestDTO tagPolicyViolation : tagPolicyViolationList) {
-                String jsonTagPolicyViolation = mapper.writeValueAsString(tagPolicyViolation);
-                TagPolicyViolationsResponseDTO tagPolicyViolationsResponse = violation.checkTagViolation(stHelper, jsonTagPolicyViolation, "tp-101");
-                logger.println(tagPolicyViolationsResponse.isViolated());
+            StringBuffer violationMsg = new StringBuffer();
+            for (TagPolicyViolationsCheckRequest instanceTags : instanceTagsList) {
+                String jsonTagPolicyViolation = mapper.writeValueAsString(instanceTags);
+                TagPolicyViolationsResponse tagPolicyViolationsResponse = violation.checkTagViolation(stHelper, jsonTagPolicyViolation, policyId);
+                if (tagPolicyViolationsResponse.isViolated()) {
+                    for (TagPolicyViolation tagViolation: tagPolicyViolationsResponse.getViolations())
+                        violationMsg.append(tagViolation.toString()).append("\n");
+                }
             }
-            logger.println("Compliance check for AWS TAG Instance pass with no violation");
+            logger.print(violationMsg.toString());
         }
     }
 
@@ -156,8 +165,8 @@ public class ComplianceCheckBuilder extends Builder {
                 CloudFormationTemplateProcessor cf = new CloudFormationTemplateProcessor(filePath.getRemote());
                 logger.println("Check USP violation for AWS security groups");
                 checkUspViolation(cf, stHelper, violation, logger);
-                logger.println("Check TAGs policy violations for AWS Instance");
-                checkTagPolicyViolation(cf, stHelper, violation, logger);
+                logger.println("Check policy TAGs violations for AWS Instance");
+                checkTagPolicyViolation(cf, stHelper, violation, logger, "tp-101");
             }
             logger.println(green("No violations were found, GOOD TO GO"));
             return true;
@@ -225,26 +234,24 @@ public class ComplianceCheckBuilder extends Builder {
 
         public FormValidation doTestTufinConnection(@QueryParameter("ip") final String host,
                                                     @QueryParameter("username") final String username,
-                                                    @QueryParameter("password") final String password) {
+                                                    @QueryParameter("password") final String password) throws IOException {
             final String DOMAINS_URL = "https://{0}/securetrack/api/domains.json";
             HttpHelper stHelper = new HttpHelper(host, password, username);
-            try {
-                org.json.simple.JSONObject response =  stHelper.get(DOMAINS_URL);
-                if (! response.isEmpty()) {
-                    return FormValidation.ok("Connection successful");
-                } else {
-                    return FormValidation.error("Connection could not be established " + response.toString());
-                }
-            } catch (ParseException ex) {
-
+            JSONObject response =  stHelper.get(DOMAINS_URL);
+            if (response != null) {
+                return FormValidation.ok("Connection successful");
             }
-            return FormValidation.ok();
+            return FormValidation.error("Connection could not be established " + response.toString());
         }
 
-        public ListBoxModel doFillPolicyIdItems(@QueryParameter String country) {
+        public ListBoxModel doFillPolicyIdItems(@QueryParameter("ip") final String host,
+                                                @QueryParameter("username") final String username,
+                                                @QueryParameter("password") final String password) throws IOException {
             ListBoxModel m = new ListBoxModel();
-            for (String s : asList("A","B","C"))
-                m.add(String.format("State %s in %s", s, country),country+':'+s);
+            HttpHelper stHelper = new HttpHelper(host, password, username);
+            Map<String, String> policiesNameID = new ViolationHelper().getTagPolicies(stHelper).getPolicies();
+            for (Map.Entry<String,String> policyNameId: policiesNameID.entrySet())
+                m.add(policyNameId.getKey(),policyNameId.getValue());
             return m;
         }
     }

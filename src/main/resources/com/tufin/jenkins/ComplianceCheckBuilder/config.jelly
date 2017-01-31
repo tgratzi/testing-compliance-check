@@ -13,7 +13,7 @@
     </f:entry>
 
     <f:entry title="${%policy.id.title}" field="policyId">
-        <f:select />
+        <f:select/>
     </f:entry>
 
     <f:validateButton

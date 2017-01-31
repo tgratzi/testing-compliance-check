@@ -1,16 +1,15 @@
 package com.tufin.lib.dataTypes.tagpolicy;
 
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.HashMap;
+import java.util.Map;
 
-public class TagPolicyViolationsCheckRequestDTO {
+public class TagPolicyViolationsCheckRequest {
     private String type = "vm";
     private String name;
     private String os = "ubuntu14.4";
     private String image;
-
-    @JsonProperty("tags")
-    private TagPolicyResource tagPolicyResource = new TagPolicyResource();
+    private Map<String,String> tags = new HashMap<String, String>();
 
     public void setType(String type) {this.type = type;}
 
@@ -28,11 +27,11 @@ public class TagPolicyViolationsCheckRequestDTO {
 
     public String getName() {return name;}
 
-    public void setTagPolicyResource(TagPolicyResource tagPolicyResource) {
-        this.tagPolicyResource = tagPolicyResource;
+    public void setTags(Map<String,String> tags) {
+        this.tags = tags;
     }
 
-    public TagPolicyResource getTagPolicyResource() {
-        return tagPolicyResource;
+    public Map<String,String> getTags() {
+        return tags;
     }
 }

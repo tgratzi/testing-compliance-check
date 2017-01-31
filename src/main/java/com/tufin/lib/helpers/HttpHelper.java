@@ -102,7 +102,7 @@ public class HttpHelper {
         return returnData;
     }
 
-    public JSONObject get(String uri) throws ParseException {
+    public JSONObject get(String uri) throws IOException {
         CloseableHttpClient httpclient = getHttpsClient();
         String url = MessageFormat.format(uri, host);
         HttpGet get = new HttpGet(url);
@@ -114,18 +114,15 @@ public class HttpHelper {
             if (status >= 200 && status < 300) {
                 returnData = getJsonFromHttpResponse(response);
             } else {
-                System.out.println("Unexpected response status: " + status);
+                String msg = "HTTP status: " + status + ", \nResponse: " + EntityUtils.toString(response.getEntity());
+                throw new IOException(msg);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            throw new IOException(ex.getMessage());
         } finally {
-            if(null != response){
-                try {
-                    response.close();
-                    httpclient.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            if(null != response) {
+                response.close();
+                httpclient.close();
             }
         }
         return returnData;
