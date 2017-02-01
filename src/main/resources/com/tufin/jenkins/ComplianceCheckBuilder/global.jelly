@@ -13,9 +13,24 @@
     tags they use. Views are always organized according to its owner class,
     so it should be straightforward to find them.
   -->
-  <f:section title="Tufin Compliance Check">
-    <f:entry title="tufin" field="useFrench" description="Check if compliance with Tufin system">
-      <f:checkbox />
-    </f:entry>
-  </f:section>
+    <f:section title="Tufin Compliance Check Credentials" name="tufin">
+
+        <f:entry title="Host" field="host">
+            <f:textbox/>
+        </f:entry>
+
+        <f:entry title="Username" field="username">
+            <f:textbox/>
+        </f:entry>
+
+        <f:entry title="Password" field="password">
+            <f:password/>
+        </f:entry>
+
+        <f:validateButton
+                title="Test Tufin REST Connection" progress="Testing..."
+                method="testTufinConnection" with="host,password,username"
+        />
+
+    </f:section>
 </j:jelly>
