@@ -63,12 +63,12 @@ public class ComplianceCheckBuilder extends Builder {
     private String host;
     private String username;
     private String password;
-    private Integer policyId;
+    private String policyId;
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
     public ComplianceCheckBuilder(boolean useOwnServerCredentials, final String host, final String username,
-                                  final String password, final Integer policyId) {
+                                  final String password, final String policyId) {
         this.useOwnServerCredentials = useOwnServerCredentials;
         this.host = host;
         this.username = username;
@@ -91,7 +91,7 @@ public class ComplianceCheckBuilder extends Builder {
         return password;
     }
 
-    public Integer getPolicyId() {
+    public String getPolicyId() {
         return policyId;
     }
 
@@ -117,9 +117,13 @@ public class ComplianceCheckBuilder extends Builder {
         Map<String, List<SecurityGroup>> securityGroupRules = cf.getSecurityGroupRules();
         if (securityGroupRules.isEmpty()) {
             logger.println("No security group was found");
-            return true;
+            return false;
         }
         for(Map.Entry<String, List<SecurityGroup>> securityGroupRule :  securityGroupRules.entrySet()) {
+            if (securityGroupRule.getValue().isEmpty()) {
+                logger.println(String.format("Could not parse security group '%s'", securityGroupRule.getKey()));
+                return true;
+            }
             logger.println(String.format("Processing security group '%s'", securityGroupRule.getKey()));
             JaxbAccessRequestBuilder rule = new JaxbAccessRequestBuilder(securityGroupRule);
             for (AccessRequest ar: rule.getAccessRequestList()) {
@@ -171,7 +175,7 @@ public class ComplianceCheckBuilder extends Builder {
             logger.println("Reading the Cloudformation JSON files");
             List<FilePath> buildFiles = build.getWorkspace().list();
             logger.println(String.format("Build HTTP connection to host '%s'", host));
-            logger.println(String.format("Build HTTP connection to host '%s'", username));
+            logger.println(String.format("Build HTTP connection to host '%s'", policyId));
             HttpHelper stHelper = new HttpHelper(host, password, username);
             for (FilePath filePath: buildFiles) {
                 if (!filePath.getName().toLowerCase().endsWith(".json")) {continue;}
@@ -183,7 +187,7 @@ public class ComplianceCheckBuilder extends Builder {
                     return false;
                 }
                 logger.println("Check policy TAGs violations for AWS Instance");
-                if (checkTagPolicyViolation(cf, stHelper, violation, logger, "tp-101")) {
+                if (checkTagPolicyViolation(cf, stHelper, violation, logger, policyId)) {
                     return false;
                 }
             }
