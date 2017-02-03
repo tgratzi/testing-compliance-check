@@ -3,10 +3,15 @@ package com.tufin.lib.dataTypes.securitypolicyviolation;
 import org.json.simple.JSONObject;
 
 
-public class ViolationDTO {
+/**
+ * USP violation information
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
+public class Violation {
     private String severities = null;
 
-    public ViolationDTO(JSONObject json) {
+    public Violation(JSONObject json) {
         JSONObject violation = new JSONObject();
 //        violation = json.get(Elements.VIOLATION);
     }

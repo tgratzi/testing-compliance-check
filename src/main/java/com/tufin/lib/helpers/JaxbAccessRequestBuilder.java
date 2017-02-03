@@ -16,6 +16,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.tufin.lib.dataTypes.generic.Attributes.INGRESS;
+
+/**
+ * Access request builder
+ *
+ * Used to create "Access Request" XML payload for checking USP violation.
+ * The access request is created based on the rule information object.
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
 public class JaxbAccessRequestBuilder {
     private List<AccessRequest> accessRequestList = new ArrayList<AccessRequest>();
 
@@ -29,7 +39,7 @@ public class JaxbAccessRequestBuilder {
             accessRequest.order = "AR1";
             try {
                 SubnetUtils network = new SubnetUtils(rule.getCidrIP());
-                if (SecurityGroup.INGRESS.equalsIgnoreCase(rule.getDirection())) {
+                if (INGRESS.equalsIgnoreCase(rule.getDirection())) {
                     accessRequest.setSource(network.getInfo().getAddress(), network.getInfo().getNetmask());
                     accessRequest.setDestination(sgNet.getInfo().getAddress(), sgNet.getInfo().getNetmask());
                 } else {

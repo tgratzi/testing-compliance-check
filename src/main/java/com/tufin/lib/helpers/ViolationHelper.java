@@ -2,7 +2,7 @@ package com.tufin.lib.helpers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tufin.lib.dataTypes.securitypolicyviolation.SecurityPolicyViolationsForMultiArDTO;
+import com.tufin.lib.dataTypes.securitypolicyviolation.SecurityPolicyViolationsForMultiAr;
 import com.tufin.lib.dataTypes.tagpolicy.TagPolicyDetailedResponse;
 import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsResponse;
 import org.json.simple.JSONObject;
@@ -12,6 +12,14 @@ import java.io.OutputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
+/**
+ * Violation helper
+ *
+ * Running compliance check both for rules and TAGs.
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
 public class ViolationHelper {
     private static final String USP_URL = "https://{0}/securetrack/api/violations/access_requests/sync.json?use_topology=false&ar_domain_mode=false";
     private static final String TAG_URL = "https://{0}/securetrack/api/tagpolicy/violation_check?policy_external_id=";
@@ -30,11 +38,11 @@ public class ViolationHelper {
         this.logger = complianceLog.getLogger();
     }
 
-    public SecurityPolicyViolationsForMultiArDTO checkUSPAccessRequestViolation(HttpHelper stHelper, String str) throws IOException{
+    public SecurityPolicyViolationsForMultiAr checkUSPAccessRequestViolation(HttpHelper stHelper, String str) throws IOException{
         System.out.println("Checking USP access request violation");
-        SecurityPolicyViolationsForMultiArDTO violationMultiAr = null;
+        SecurityPolicyViolationsForMultiAr violationMultiAr = null;
         JSONObject response = stHelper.post(USP_URL, str, APPLICATION_XML);
-        violationMultiAr = new SecurityPolicyViolationsForMultiArDTO(response);
+        violationMultiAr = new SecurityPolicyViolationsForMultiAr(response);
         return violationMultiAr;
     }
 
@@ -48,8 +56,6 @@ public class ViolationHelper {
 
     public TagPolicyDetailedResponse getTagPolicies(HttpHelper stHelper) throws IOException {
         JSONObject response = stHelper.get(POLICY_URL);
-        TagPolicyDetailedResponse tagPolicyDetailedResponse = new TagPolicyDetailedResponse(response);
-//        Map<String,String> policyNameId = tagPolicyDetailedResponse.getAllPolicyId();
-        return tagPolicyDetailedResponse;
+        return new TagPolicyDetailedResponse(response);
     }
 }

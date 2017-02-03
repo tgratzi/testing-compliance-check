@@ -4,22 +4,28 @@ import com.tufin.lib.dataTypes.generic.Elements;
 import org.json.simple.JSONObject;
 
 
-public class SecurityPolicyViolationForArDTO {
+/**
+ * Security Policy Violations For single Access Request
+ *
+ * Parse the security policy violation response for access request based on the USP
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
+public class SecurityPolicyViolationForAr {
     private int access_request_order;
-    private ViolationDTO violations;
+    private Violation violations;
 
-    public SecurityPolicyViolationForArDTO(JSONObject json) {
-        System.out.println("Parsing security policy violation for AR");
+    public SecurityPolicyViolationForAr(JSONObject json) {
         this.access_request_order = Integer.parseInt(json.get(Elements.ACCESS_REQUEST_ORDER).toString());
         Object violations = json.get(Elements.VIOLATIONS);
         if (violations instanceof String) {
             this.violations = null;
         } else {
-            this.violations = new ViolationDTO((JSONObject) json.get(Elements.VIOLATIONS));
+            this.violations = new Violation((JSONObject) json.get(Elements.VIOLATIONS));
         }
     }
 
-    public ViolationDTO getViolations() {
+    public Violation getViolations() {
         return violations;
     }
 

@@ -1,8 +1,6 @@
 package com.tufin.jenkins;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tufin.lib.dataTypes.tagpolicy.TagPolicyDetailedResponse;
 import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolation;
 import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsCheckRequest;
 import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsResponse;
@@ -12,7 +10,7 @@ import com.tufin.lib.dataTypes.securitygroup.SecurityGroup;
 import com.tufin.lib.dataTypes.accessrequest.AccessRequest;
 import com.tufin.lib.helpers.HttpHelper;
 import com.tufin.lib.helpers.ViolationHelper;
-import com.tufin.lib.dataTypes.securitypolicyviolation.SecurityPolicyViolationsForMultiArDTO;
+import com.tufin.lib.dataTypes.securitypolicyviolation.SecurityPolicyViolationsForMultiAr;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Extension;
@@ -123,7 +121,7 @@ public class ComplianceCheckBuilder extends Builder {
             JaxbAccessRequestBuilder rule = new JaxbAccessRequestBuilder(securityGroupRule);
             for (AccessRequest ar: rule.getAccessRequestList()) {
                 String accessRequestStr = rule.accessRequestBuilder(ar);
-                SecurityPolicyViolationsForMultiArDTO violationMultiAr = violation.checkUSPAccessRequestViolation(stHelper, accessRequestStr);
+                SecurityPolicyViolationsForMultiAr violationMultiAr = violation.checkUSPAccessRequestViolation(stHelper, accessRequestStr);
                 if (violationMultiAr.getSecurityPolicyViolationsForAr().isViolated()) {
                     logger.println(formatMessage(securityGroupRule.getKey(), direction, ar, "VIOLATION FOUND"));
                     return true;
@@ -225,7 +223,6 @@ public class ComplianceCheckBuilder extends Builder {
             req.bindJSON(this, formData.getJSONObject("tufin"));
             req.bindJSON(this, formData);
             save();
-//            return false;
             return super.configure(req, formData);
         }
 
@@ -260,7 +257,6 @@ public class ComplianceCheckBuilder extends Builder {
 
         @Override
         public String getDisplayName() {
-            LOGGER.info("Display name for tufin compliance check plugin");
             return "Tufin Compliance Check";
         }
 

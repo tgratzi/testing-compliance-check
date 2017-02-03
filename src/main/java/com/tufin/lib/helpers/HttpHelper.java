@@ -25,13 +25,20 @@ import java.io.IOException;
 import java.text.MessageFormat;
 
 
+/**
+ * HTTPs helper
+ *
+ * The class used to create HTTPs connection with basic authentication.
+ * Support both GET and POST methods. The response will return in JSON format.
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
 public class HttpHelper {
     private String host;
     private String password;
     private String username;
 
     public HttpHelper(String host, String password, String username) {
-//        Logger.getLogger("org.apache.http").setLevel(Level.INFO);
         this.password = password;
         this.username = username;
         this.host = host;

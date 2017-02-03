@@ -4,13 +4,17 @@ package com.tufin.lib.dataTypes.securitygroup;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import static com.tufin.lib.dataTypes.generic.Attributes.*;
 
+
+/**
+ * SecurityGroup representation
+ *
+ * Hold rule information and can transform to JSON format.
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
 public class SecurityGroup {
-    public static final String INGRESS = "SecurityGroupIngress";
-    public static final String EGRESS = "SecurityGroupEgress";
-    public static final String INBOUND = "Inbound";
-    public static final String OUTBOUND = "Outbound";
-
     @JsonProperty("IpProtocol")
     String protocol;
 
@@ -20,7 +24,7 @@ public class SecurityGroup {
     @JsonProperty("ToPort")
     Integer toPort;
 
-    @JsonProperty("CidrIp")
+    @JsonProperty(CIDR_IP)
     String cidrIP;
 
     @JsonIgnore

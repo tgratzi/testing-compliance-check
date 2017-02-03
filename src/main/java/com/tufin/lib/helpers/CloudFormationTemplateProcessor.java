@@ -15,12 +15,25 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
+import static com.tufin.lib.dataTypes.generic.Attributes.CIDR_IP;
+
+
+/**
+ * AWS Cloudformation parser
+ *
+ * Used to parse AWS Cloudformation JSON file and create object instead.
+ * The class will only parse resources of types "SecurityGroup" and "Instance".
+ * Rule information will be extract from the SecurityGroup resource and the TAGs from the Instance resource
+ * Currently support both simple values and "Ref" object.
+ * If "Ref" object was found the class will try to find a simple value by finding the referance object in the JSON file.
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
 public class CloudFormationTemplateProcessor {
     private final static String SECURITY_GROUP_TYPE = "AWS::EC2::SecurityGroup";
     private final static String INSTANCE_TYPE = "AWS::EC2::Instance";
     private final static String SECURITY_GROUP_INGRESS = "SecurityGroupIngress";
     private final static String SECURITY_GROUP_EGRESS = "SecurityGroupEgress";
-    private final static String CIDR_IP = "CidrIp";
     private final static String REF = "Ref";
     private final static String DEFAULT = "Default";
 
