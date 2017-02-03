@@ -65,8 +65,8 @@ public class CloudFormationTemplateProcessor {
                 securityGroupNodeTypes.put(SECURITY_GROUP_INGRESS, securityIngressNode);
                 securityGroupNodeTypes.put(SECURITY_GROUP_EGRESS, securityEgressNode);
                 for (Map.Entry<String, JsonNode> securityType: securityGroupNodeTypes.entrySet()) {
-                    if (! securityType.getValue().isNull()) {
-                        List<SecurityGroup> rules = extractRule(securityIngressNode, securityType.getKey());
+                    if (securityType.getValue().size() != 0) {
+                        List<SecurityGroup> rules = extractRule(securityType.getValue(), securityType.getKey());
                         if (rules.isEmpty()) {
 //                            this.securityGroupRules = new HashMap<String, List<SecurityGroup>>();
                             this.securityGroupRules.put(resourceNode.getKey(), rules);

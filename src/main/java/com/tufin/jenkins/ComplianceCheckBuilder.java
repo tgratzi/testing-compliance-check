@@ -21,24 +21,17 @@ import hudson.util.FormValidation;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
-import org.apache.commons.net.util.SubnetUtils;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.ParseException;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.QueryParameter;
 
 import javax.annotation.Nullable;
-import javax.servlet.ServletException;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-
-import static java.util.Arrays.asList;
 
 
 /**
@@ -59,7 +52,7 @@ public class ComplianceCheckBuilder extends Builder {
     private static final transient Logger LOGGER = Logger.getLogger(ComplianceCheckBuilder.class.getName());
 
     //Below fields are configured via the config.jelly page.
-    private boolean useOwnServerCredentials;
+    private boolean useLocalSTCredentials;
     private String host;
     private String username;
     private String password;
@@ -69,7 +62,7 @@ public class ComplianceCheckBuilder extends Builder {
     @DataBoundConstructor
     public ComplianceCheckBuilder(boolean useOwnServerCredentials, final String host, final String username,
                                   final String password, final String policyId) {
-        this.useOwnServerCredentials = useOwnServerCredentials;
+        this.useLocalSTCredentials = useOwnServerCredentials;
         this.host = host;
         this.username = username;
         this.password = password;
@@ -99,7 +92,7 @@ public class ComplianceCheckBuilder extends Builder {
 
     private String green(String message) { return "\033[32m" + message + "\033[0m"; }
 
-    private String formatMessage(String securityGroupName, AccessRequest accessRequest, String status) {
+    private String formatMessage(String securityGroupName, String direction, AccessRequest accessRequest, String status) {
         StringBuffer errorMsg = new StringBuffer();
         errorMsg.append("----------------------------------------------------------------------").append('\n');
         errorMsg.append("Status: ").append(status).append('\n');
@@ -107,6 +100,7 @@ public class ComplianceCheckBuilder extends Builder {
         errorMsg.append("Source: ").append(accessRequest.getSource()).append('\n');
         errorMsg.append("Destination: ").append(accessRequest.getDestination()).append('\n');
         errorMsg.append("Service: ").append(accessRequest.getService()).append('\n');
+        errorMsg.append("Direction: ").append(direction).append('\n');
         errorMsg.append("----------------------------------------------------------------------");
         return errorMsg.toString();
     }
@@ -124,16 +118,17 @@ public class ComplianceCheckBuilder extends Builder {
                 logger.println(String.format("Could not parse security group '%s'", securityGroupRule.getKey()));
                 return true;
             }
+            String direction = securityGroupRule.getValue().get(0).getDirection();
             logger.println(String.format("Processing security group '%s'", securityGroupRule.getKey()));
             JaxbAccessRequestBuilder rule = new JaxbAccessRequestBuilder(securityGroupRule);
             for (AccessRequest ar: rule.getAccessRequestList()) {
                 String accessRequestStr = rule.accessRequestBuilder(ar);
                 SecurityPolicyViolationsForMultiArDTO violationMultiAr = violation.checkUSPAccessRequestViolation(stHelper, accessRequestStr);
                 if (violationMultiAr.getSecurityPolicyViolationsForAr().isViolated()) {
-                    logger.println(formatMessage(securityGroupRule.getKey(), ar, "VIOLATION FOUND"));
+                    logger.println(formatMessage(securityGroupRule.getKey(), direction, ar, "VIOLATION FOUND"));
                     return true;
                 }
-                logger.println(formatMessage(securityGroupRule.getKey(), ar, "No violation found"));
+                logger.println(formatMessage(securityGroupRule.getKey(), direction, ar, "No violation found"));
             }
         }
         logger.println("Compliance check for AWS security groups pass with no violation");
@@ -216,6 +211,7 @@ public class ComplianceCheckBuilder extends Builder {
         private String host;
         private String username;
         private String password;
+        private Boolean enabled;
 
         public DescriptorImpl() {
             load();
@@ -227,6 +223,7 @@ public class ComplianceCheckBuilder extends Builder {
 //            username = formData.getString("username");
 //            password = formData.getString("password");
             req.bindJSON(this, formData.getJSONObject("tufin"));
+            req.bindJSON(this, formData);
             save();
 //            return false;
             return super.configure(req, formData);
@@ -272,28 +269,28 @@ public class ComplianceCheckBuilder extends Builder {
             return "/plugin/tufin-compliance-check/help.html";
         }
 
-        public FormValidation doCheckUsername(@QueryParameter String value) throws IOException, ServletException {
+        public FormValidation doCheckUsername(@QueryParameter String value) {
             if (value.length() == 0)
-                return FormValidation.error("Please set a username");
+                return FormValidation.error("Please enter a valid username");
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckPassword(@QueryParameter String value) throws IOException, ServletException {
+        public FormValidation doCheckPassword(@QueryParameter String value) {
             if (value.length() == 0)
-                return FormValidation.error("Please set a password");
+                return FormValidation.error("Please enter the corresponding password");
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckIp(@QueryParameter String value) {
+        public FormValidation doCheckHost(@QueryParameter String value) {
             if (value.length() == 0) {
-                return FormValidation.error("Please set an IP");
-            } else {
-                try {
-                    SubnetUtils network = new SubnetUtils(value + "/32");
-                } catch (IllegalArgumentException ex) {
-                    System.out.println("IP address is invalid, Error " + ex.getMessage());
-                    return FormValidation.error("IP address is invalid, Error " + ex.getMessage());
-                }
+                return FormValidation.error("Please enter a host, either alias, fulle domain name or IP address");
+//            } else {
+//                try {
+//                    SubnetUtils network = new SubnetUtils(value + "/32");
+//                } catch (IllegalArgumentException ex) {
+//                    System.out.println("IP address is invalid, Error " + ex.getMessage());
+//                    return FormValidation.error("IP address is invalid, Error " + ex.getMessage());
+//                }
             }
             return FormValidation.ok();
         }
@@ -317,13 +314,13 @@ public class ComplianceCheckBuilder extends Builder {
             try {
                 HttpHelper stHelper = new HttpHelper(host, password, username);
                 Map<String, String> policiesNameID = new ViolationHelper().getTagPolicies(stHelper).getPolicies();
+                m.add("","");
                 for (Map.Entry<String,String> policyNameId: policiesNameID.entrySet())
                     m.add(policyNameId.getKey(),policyNameId.getValue());
                 return m;
             } catch (Exception e) {
-                String message = "Provide Tufin server credentials to see policy list " + host;
+                String message = "Provide Tufin server credentials to see policy list";
                 m.add(new ListBoxModel.Option(message, message));
-                m.add(new ListBoxModel.Option(e.getMessage(), e.getMessage()));
                 return m; // Return empty list of project names
             }
         }

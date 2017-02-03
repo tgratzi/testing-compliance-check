@@ -1,32 +1,15 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
-    <!--<f:entry title="${%st.ip.title}" field="ip">-->
-        <!--<f:textbox/>-->
-    <!--</f:entry>-->
-
-    <!--<f:entry title="${%st.username.title}" field="username">-->
-        <!--<f:textbox/>-->
-    <!--</f:entry>-->
-
-    <!--<f:entry title="${%st.password.title}" field="password">-->
-        <!--<f:password/>-->
-    <!--</f:entry>-->
 
     <f:entry title="Policy Name" field="policyId">
         <f:select/>
     </f:entry>
 
-    <!--<f:validateButton-->
-          <!--title="${%tufin.connection.test.title}" progress="${%tufin.connection.test.progress}"-->
-          <!--method="testTufinConnection" with="ip,password,username"-->
-    <!--/>-->
-
     <!-- Creates a text field that shows the value of the "name" property. When submitted, it will be passed to the
                 corresponding constructor parameter. -->
-    <f:optionalBlock title="Use global server credentials"
-                     inline="true" field="useOwnServerCredentials" negative="true"
-                     checked="${instance==null?true:!instance.useOwnServerCredentials}">
-
+    <f:optionalBlock title="Use global SecureTrack configuration"
+                     inline="true" field="useLocalSTCredentials" negative="true"
+                     checked="${instance==null?true:!instance.useLocalSTCredentials}">
         <f:entry title="Host" field="host">
             <f:textbox default="${descriptor.host}" />
         </f:entry>
@@ -36,7 +19,7 @@
         </f:entry>
 
         <f:entry title="Password" field="password">
-            <f:password />
+            <f:password value="${descriptor.getPassword()}"/>
         </f:entry>
         <f:validateButton title="Test Connection" progress="Testing..."
                           method="testTufinConnection"  with="host,password,username" />

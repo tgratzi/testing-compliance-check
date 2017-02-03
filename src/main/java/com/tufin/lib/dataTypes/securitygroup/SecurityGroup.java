@@ -8,6 +8,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class SecurityGroup {
     public static final String INGRESS = "SecurityGroupIngress";
     public static final String EGRESS = "SecurityGroupEgress";
+    public static final String INBOUND = "Inbound";
+    public static final String OUTBOUND = "Outbound";
 
     @JsonProperty("IpProtocol")
     String protocol;
@@ -29,7 +31,7 @@ public class SecurityGroup {
     }
 
     public String getDirection() {
-        return direction;
+        return this.direction.equalsIgnoreCase(INGRESS) ? INBOUND : OUTBOUND;
     }
 
     public String getCidrIP() {
