@@ -1,7 +1,7 @@
 <div>
     <p>
-        This plugin run compliance check against Tufin SecureTrack machine for each security group that in the
-        AWS Cloudformation file. This plugin must come after Cloudformation was retrive the information from GitHub
-        and before deployment the environment into the AWS cloud
+        This plugin runs compliance check against Tufin SecureTrack machine for each SecurityGroup and Instance
+        resources in the AWS Cloudformation template file. This plugin will run as a build step in jenkins just before
+        the Cloudformation template was checked out from GitHub and before deploy to the AWS cloud.
     </p>
 </div>
