@@ -6,7 +6,13 @@ import com.tufin.lib.dataTypes.generic.Elements;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ * TAG Policy Requirment
+ *
+ * Represent the requirements for the TAG policy in the JSON response
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
 public class TagPolicyRequirement {
     private String requirementName;
     private String requirementDescription;

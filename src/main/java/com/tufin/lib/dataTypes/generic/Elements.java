@@ -1,6 +1,11 @@
 package com.tufin.lib.dataTypes.generic;
 
 
+/**
+ * XML and JSON elements
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
 public final class Elements {
     public static final String ACCESS_REQUEST_ORDER = "access_request_order";
     public static final String ERROR_MESSAGE = "error_message";

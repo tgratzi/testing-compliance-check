@@ -4,6 +4,14 @@ package com.tufin.lib.dataTypes.tagpolicy;
 import java.util.HashMap;
 import java.util.Map;
 
+
+/**
+ * TAG Policy Violation Request
+ *
+ * TAGs information request
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
 public class TagPolicyViolationsCheckRequest {
     private String type = "vm";
     private String name;

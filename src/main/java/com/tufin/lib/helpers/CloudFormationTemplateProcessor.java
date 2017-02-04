@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.util.*;
 
 import static com.tufin.lib.dataTypes.generic.Attributes.CIDR_IP;
+import static com.tufin.lib.dataTypes.generic.Attributes.EGRESS;
+import static com.tufin.lib.dataTypes.generic.Attributes.INGRESS;
 
 
 /**
@@ -25,15 +27,13 @@ import static com.tufin.lib.dataTypes.generic.Attributes.CIDR_IP;
  * The class will only parse resources of types "SecurityGroup" and "Instance".
  * Rule information will be extract from the SecurityGroup resource and the TAGs from the Instance resource
  * Currently support both simple values and "Ref" object.
- * If "Ref" object was found the class will try to find a simple value by finding the referance object in the JSON file.
+ * If "Ref" object was found the class will try to find a simple value by finding the reference object in the JSON file.
  *
  * @author Tzachi Gratziani ps-dev@tufin.com
  */
 public class CloudFormationTemplateProcessor {
     private final static String SECURITY_GROUP_TYPE = "AWS::EC2::SecurityGroup";
     private final static String INSTANCE_TYPE = "AWS::EC2::Instance";
-    private final static String SECURITY_GROUP_INGRESS = "SecurityGroupIngress";
-    private final static String SECURITY_GROUP_EGRESS = "SecurityGroupEgress";
     private final static String REF = "Ref";
     private final static String DEFAULT = "Default";
 
@@ -63,20 +63,19 @@ public class CloudFormationTemplateProcessor {
     }
 
     private void processCF(JsonNode resourcesRoot) throws IOException {
-        System.out.println("Processing Cloudformation security group");
         Iterator<Map.Entry<String, JsonNode>> fields = resourcesRoot.fields();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> resourceNode = fields.next();
             JsonNode typeNode = resourceNode.getValue().get("Type");
             if (typeNode != null && SECURITY_GROUP_TYPE.equals(typeNode.textValue())) {
-                JsonNode securityIngressNode = resourceNode.getValue().findPath(SECURITY_GROUP_INGRESS);
-                JsonNode securityEgressNode = resourceNode.getValue().findPath(SECURITY_GROUP_EGRESS);
+                JsonNode securityIngressNode = resourceNode.getValue().findPath(INGRESS);
+                JsonNode securityEgressNode = resourceNode.getValue().findPath(EGRESS);
                 if (securityEgressNode.isNull() && securityIngressNode.isNull())
                     break;
 
                 Map<String, JsonNode> securityGroupNodeTypes = new HashMap<String, JsonNode>();
-                securityGroupNodeTypes.put(SECURITY_GROUP_INGRESS, securityIngressNode);
-                securityGroupNodeTypes.put(SECURITY_GROUP_EGRESS, securityEgressNode);
+                securityGroupNodeTypes.put(INGRESS, securityIngressNode);
+                securityGroupNodeTypes.put(EGRESS, securityEgressNode);
                 for (Map.Entry<String, JsonNode> securityType: securityGroupNodeTypes.entrySet()) {
                     if (securityType.getValue().size() != 0) {
                         List<SecurityGroup> rules = extractRule(securityType.getValue(), securityType.getKey());
@@ -147,6 +146,7 @@ public class CloudFormationTemplateProcessor {
         String refValue = node.get("Ref").textValue();
         JsonNode refObject = jsonRoot.findValue(refValue);
         JsonNode nodeType = refObject.get("Type");
+        //First check if object referance is SecurityGroup resource
         if (nodeType.textValue().equalsIgnoreCase(SECURITY_GROUP_TYPE)) {
             try {
                 return refObject.findValue(key).textValue();
@@ -169,6 +169,11 @@ public class CloudFormationTemplateProcessor {
         return value;
     }
 
+    /**
+     * Will try to find CIDR and IP address from the parameters element in the Cloudformation template.
+     * If the default element exists the method will return the default information but if not the method will
+     * try to generate IP address and CIDR based on the regex in the AllowedPattern argument.
+     */
     private String getCidrIpFromParam(JsonNode cidrIpRefData) throws IOException{
         if (cidrIpRefData.has(DEFAULT)) {
             return cidrIpRefData.get(DEFAULT).textValue();

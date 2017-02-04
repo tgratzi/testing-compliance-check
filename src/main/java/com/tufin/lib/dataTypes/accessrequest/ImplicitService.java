@@ -4,6 +4,13 @@ package com.tufin.lib.dataTypes.accessrequest;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
 
+/**
+ * Implicit service type
+ *
+ * Represent service as protocol and range of ports
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
 @XmlType(name = "implicit_service")
 public class ImplicitService extends AccessRequestAbstract {
     @XmlElement(name = "name")

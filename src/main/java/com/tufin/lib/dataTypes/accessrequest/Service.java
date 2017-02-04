@@ -3,6 +3,12 @@ package com.tufin.lib.dataTypes.accessrequest;
 
 import javax.xml.bind.annotation.XmlElement;
 
+
+/**
+ * Service and range of service
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
 public class Service {
     @XmlElement(name = "predefined")
     public String predefined = "true";

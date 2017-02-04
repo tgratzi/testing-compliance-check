@@ -9,7 +9,11 @@ import static com.tufin.lib.dataTypes.generic.Attributes.MANDATORY_REQUIREMENT_T
 import static com.tufin.lib.dataTypes.generic.Attributes.VALID_VALUES_REQUIREMENT_TYPE;
 
 /**
- * Created by tzachi.gratziani on 28/01/2017.
+ * TAG Policy
+ *
+ * Used to represent the policy tag element in the JSON response
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
  */
 public class TagPolicy {
     private String policy_description;

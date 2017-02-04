@@ -7,6 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+/**
+ * TAG Policy Violation Response
+ *
+ * TAGs information response
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
 public class TagPolicyViolationsResponse {
     private List<TagPolicyViolation> violations;
     private String errorMessage;

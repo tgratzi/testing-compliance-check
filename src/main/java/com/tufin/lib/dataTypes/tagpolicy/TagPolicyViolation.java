@@ -10,7 +10,11 @@ import static com.tufin.lib.dataTypes.generic.Attributes.VALID_VALUES_REQUIREMEN
 
 
 /**
- * Created by tzachi.gratziani on 26/01/2017.
+ * TAG Policy Violation
+ *
+ * Represent the violation for each TAG policy in the JSON response
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
  */
 public class TagPolicyViolation {
     private String policyId;

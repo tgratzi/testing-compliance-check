@@ -7,6 +7,14 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.util.ArrayList;
 import java.util.List;
 
+
+/**
+ * Multi Access request representation
+ *
+ * Hold list of access request information and generate XML
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
 @XmlRootElement(name = "access_requests")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class AccessRequests {

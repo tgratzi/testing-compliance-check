@@ -3,6 +3,13 @@ package com.tufin.lib.dataTypes.accessrequest;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
 
+
+/**
+ * Network representation
+ *
+ *
+ * @author Tzachi Gratziani ps-dev@tufin.com
+ */
 @XmlType(name = "ip_network")
 public class IPNetwork extends AccessRequestAbstract {
     @XmlElement(name = "network")
