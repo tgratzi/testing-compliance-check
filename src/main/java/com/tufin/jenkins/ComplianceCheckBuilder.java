@@ -149,12 +149,15 @@ public class ComplianceCheckBuilder extends Builder {
                         violationMsg.append(tagViolation.toString()).append("\n");
                 }
             }
+            logger.println("----------------------------------------------------------------------");
             if (violationMsg.toString().isEmpty()) {
-                logger.println("No instance TAG violation found");
+                logger.println("No instance TAGs violations were found");
             } else {
                 logger.print(violationMsg.toString());
+                logger.println("----------------------------------------------------------------------");
                 return true;
             }
+            logger.println("----------------------------------------------------------------------");
         }
         return false;
     }
@@ -168,18 +171,17 @@ public class ComplianceCheckBuilder extends Builder {
             logger.println("Reading the Cloudformation JSON files");
             List<FilePath> buildFiles = build.getWorkspace().list();
             logger.println(String.format("Build HTTP connection to host '%s'", host));
-            logger.println(String.format("Build HTTP connection to host '%s'", policyId));
             HttpHelper stHelper = new HttpHelper(host, password, username);
             for (FilePath filePath: buildFiles) {
                 if (!filePath.getName().toLowerCase().endsWith(".json")) {continue;}
                 ViolationHelper violation = new ViolationHelper();
                 logger.println(String.format("Compliance check for Cloudformation template '%s'", filePath.getName()));
                 CloudFormationTemplateProcessor cf = new CloudFormationTemplateProcessor(filePath.getRemote());
-                logger.println("Check USP violation for AWS security groups");
+                logger.println("Checking USP violation for AWS security groups");
                 if (checkUspViolation(cf, stHelper, violation, logger)) {
                     return false;
                 }
-                logger.println("Check policy TAGs violations for AWS Instance");
+                logger.println("Checking policy TAGs violation for AWS Instances");
                 if (checkTagPolicyViolation(cf, stHelper, violation, logger, policyId)) {
                     return false;
                 }

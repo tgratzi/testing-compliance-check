@@ -7,7 +7,7 @@
 
     <!-- Creates a text field that shows the value of the "name" property. When submitted, it will be passed to the
                 corresponding constructor parameter. -->
-    <f:optionalBlock title="Use global SecureTrack configuration"
+    <f:optionalBlock title="SecureTrack connection"
                      inline="true" field="useLocalSTCredentials" negative="true"
                      checked="${instance==null?true:!instance.useLocalSTCredentials}">
         <f:entry title="Host" field="host">
