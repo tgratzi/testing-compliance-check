@@ -1,3 +1,3 @@
 # Testing Compliance Check
 
-See Wiki web pacge for more information
+See Wiki web page for more information
