@@ -6,7 +6,7 @@ import javax.xml.bind.annotation.XmlType;
 /**
  * Simple IP and Netmask representation
  *
- * @author Tzachi Gratziani ps-dev@tufin.com
+ * @author Tufin PS-Dev support@tufin.com
  */
 @XmlType(name = "raw_network_subnet")
 public class RawNetworkSubnet extends NetworkAbstract {

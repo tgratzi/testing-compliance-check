@@ -7,7 +7,7 @@ import javax.xml.bind.annotation.XmlElement;
 /**
  * Service and range of service
  *
- * @author Tzachi Gratziani ps-dev@tufin.com
+ * @author Tufin PS-Dev support@tufin.com
  */
 public class Service {
     @XmlElement(name = "predefined")

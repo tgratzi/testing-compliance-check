@@ -29,7 +29,7 @@ import static com.tufin.lib.dataTypes.generic.Attributes.INGRESS;
  * Currently support both simple values and "Ref" object.
  * If "Ref" object was found the class will try to find a simple value by finding the reference object in the JSON file.
  *
- * @author Tzachi Gratziani ps-dev@tufin.com
+ * @author Tufin PS-Dev support@tufin.com
  */
 public class CloudFormationTemplateProcessor {
     private final static String SECURITY_GROUP_TYPE = "AWS::EC2::SecurityGroup";

@@ -8,7 +8,7 @@ import javax.xml.bind.annotation.XmlType;
  * Network representation
  *
  *
- * @author Tzachi Gratziani ps-dev@tufin.com
+ * @author Tufin PS-Dev support@tufin.com
  */
 @XmlType(name = "ip_network")
 public class IPNetwork extends AccessRequestAbstract {

@@ -18,7 +18,7 @@ import java.util.logging.Logger;
  *
  * Running compliance check both for rules and TAGs.
  *
- * @author Tzachi Gratziani ps-dev@tufin.com
+ * @author Tufin PS-Dev support@tufin.com
  */
 public class ViolationHelper {
     private static final String USP_URL = "https://{0}/securetrack/api/violations/access_requests/sync.json?use_topology=false&ar_domain_mode=false";

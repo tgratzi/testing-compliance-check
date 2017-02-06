@@ -13,7 +13,7 @@ import java.util.List;
  *
  * Hold list of access request information and generate XML
  *
- * @author Tzachi Gratziani ps-dev@tufin.com
+ * @author Tufin PS-Dev support@tufin.com
  */
 @XmlRootElement(name = "access_requests")
 @XmlAccessorType(XmlAccessType.FIELD)

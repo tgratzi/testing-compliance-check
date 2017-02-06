@@ -24,7 +24,7 @@ import static com.tufin.lib.dataTypes.generic.Attributes.INGRESS;
  * Used to create "Access Request" XML payload for checking USP violation.
  * The access request is created based on the rule information object.
  *
- * @author Tzachi Gratziani ps-dev@tufin.com
+ * @author Tufin PS-Dev support@tufin.com
  */
 public class JaxbAccessRequestBuilder {
     private List<AccessRequest> accessRequestList = new ArrayList<AccessRequest>();

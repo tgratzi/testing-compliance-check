@@ -10,7 +10,7 @@ import javax.xml.bind.annotation.XmlElement;
  * The source, destination and service will get AccessRequest abstract class in order to able to represent the
  * XSI:type during the XML creation. This achieved by assign different data type during the initialization.
  *
- * @author Tzachi Gratziani ps-dev@tufin.com
+ * @author Tufin PS-Dev support@tufin.com
  */
 public class AccessRequest {
     @XmlElement(name = "use_topology")

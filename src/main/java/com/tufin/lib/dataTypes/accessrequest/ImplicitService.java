@@ -9,7 +9,7 @@ import javax.xml.bind.annotation.XmlType;
  *
  * Represent service as protocol and range of ports
  *
- * @author Tzachi Gratziani ps-dev@tufin.com
+ * @author Tufin PS-Dev support@tufin.com
  */
 @XmlType(name = "implicit_service")
 public class ImplicitService extends AccessRequestAbstract {

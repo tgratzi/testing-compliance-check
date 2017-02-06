@@ -31,7 +31,7 @@ import java.text.MessageFormat;
  * The class used to create HTTPs connection with basic authentication.
  * Support both GET and POST methods. The response will return in JSON format.
  *
- * @author Tzachi Gratziani ps-dev@tufin.com
+ * @author Tufin PS-Dev support@tufin.com
  */
 public class HttpHelper {
     private String host;
