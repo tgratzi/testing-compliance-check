@@ -15,9 +15,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
-import static com.tufin.lib.dataTypes.generic.Attributes.CIDR_IP;
-import static com.tufin.lib.dataTypes.generic.Attributes.EGRESS;
-import static com.tufin.lib.dataTypes.generic.Attributes.INGRESS;
+import static com.tufin.lib.dataTypes.generic.Attributes.*;
 
 
 /**
@@ -39,14 +37,17 @@ public class CloudFormationTemplateProcessor {
 
     private ObjectMapper objectMapper = new ObjectMapper();
     private final JsonNode jsonRoot;
+    private Boolean isCloudformation;
     private Map<String, List<SecurityGroup>> securityGroupRules = new HashMap<String, List<SecurityGroup>>();
-    private List<TagPolicyViolationsCheckRequest> instancesTags = new ArrayList<TagPolicyViolationsCheckRequest>();
+    private Map<String, TagPolicyViolationsCheckRequest> instancesTags = new HashMap<String, TagPolicyViolationsCheckRequest>();
+
+    public Boolean getIsCloudformation() {return isCloudformation;}
 
     public Map<String, List<SecurityGroup>> getSecurityGroupRules() {
         return securityGroupRules;
     }
 
-    public List<TagPolicyViolationsCheckRequest> getInstancesTags() {
+    public Map<String, TagPolicyViolationsCheckRequest> getInstancesTags() {
         return instancesTags;
     }
 
@@ -54,12 +55,17 @@ public class CloudFormationTemplateProcessor {
         JSONParser parser = new JSONParser();
         try {
             this.jsonRoot = objectMapper.readTree(parser.parse(new FileReader(file)).toString());
-            JsonNode resourcesRoot = this.jsonRoot.get("Resources");
-            processCF(resourcesRoot);
+            if (this.jsonRoot.has(RESOURCES)) {
+                JsonNode resourcesRoot = this.jsonRoot.get(RESOURCES);
+                System.out.print(resourcesRoot);
+                processCF(resourcesRoot);
+                this.isCloudformation = true;
+            } else {
+                this.isCloudformation = false;
+            }
         } catch (ParseException ex) {
-            throw new IOException("Failed to parse file name " + file);
+            throw new IOException("Failed to parse file name " + file + ", Error: " + ex.getMessage());
         }
-
     }
 
     private void processCF(JsonNode resourcesRoot) throws IOException {
@@ -88,7 +94,7 @@ public class CloudFormationTemplateProcessor {
                     }
                 }
             } else if (typeNode != null && INSTANCE_TYPE.equals(typeNode.textValue())) {
-                this.instancesTags.add(getTagFromInstance(resourceNode));
+                this.instancesTags.put(resourceNode.getKey(), getTagFromInstance(resourceNode));
             }
         }
     }
@@ -232,5 +238,4 @@ public class CloudFormationTemplateProcessor {
             tagsMap.put(tag.get("Key").textValue(), tag.get("Value").textValue());
         return tagsMap;
     }
-
 }

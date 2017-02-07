@@ -90,78 +90,6 @@ public class ComplianceCheckBuilder extends Builder {
 
     private String green(String message) { return "\033[32m" + message + "\033[0m"; }
 
-    private String formatMessage(String securityGroupName, String direction, AccessRequest accessRequest, String status) {
-        StringBuffer errorMsg = new StringBuffer();
-        errorMsg.append("----------------------------------------------------------------------").append('\n');
-        errorMsg.append("Status: ").append(status).append('\n');
-        errorMsg.append("Security Group: ").append(securityGroupName).append('\n');
-        errorMsg.append("Source: ").append(accessRequest.getSource()).append('\n');
-        errorMsg.append("Destination: ").append(accessRequest.getDestination()).append('\n');
-        errorMsg.append("Service: ").append(accessRequest.getService()).append('\n');
-        errorMsg.append("Direction: ").append(direction).append('\n');
-        errorMsg.append("----------------------------------------------------------------------");
-        return errorMsg.toString();
-    }
-
-    private Boolean checkUspViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper, ViolationHelper violation,
-                                   PrintStream logger) throws IOException {
-        logger.println("Getting list of AWS security group CF object");
-        Map<String, List<SecurityGroup>> securityGroupRules = cf.getSecurityGroupRules();
-        if (securityGroupRules.isEmpty()) {
-            logger.println("No security group was found");
-            return false;
-        }
-        for(Map.Entry<String, List<SecurityGroup>> securityGroupRule :  securityGroupRules.entrySet()) {
-            if (securityGroupRule.getValue().isEmpty()) {
-                logger.println(String.format("Could not parse security group '%s'", securityGroupRule.getKey()));
-                return true;
-            }
-            String direction = securityGroupRule.getValue().get(0).getDirection();
-            logger.println(String.format("Processing security group '%s'", securityGroupRule.getKey()));
-            JaxbAccessRequestBuilder rule = new JaxbAccessRequestBuilder(securityGroupRule);
-            for (AccessRequest ar: rule.getAccessRequestList()) {
-                String accessRequestStr = rule.accessRequestBuilder(ar);
-                SecurityPolicyViolationsForMultiAr violationMultiAr = violation.checkUSPAccessRequestViolation(stHelper, accessRequestStr);
-                if (violationMultiAr.getSecurityPolicyViolationsForAr().isViolated()) {
-                    logger.println(formatMessage(securityGroupRule.getKey(), direction, ar, "VIOLATION FOUND"));
-                    return true;
-                }
-                logger.println(formatMessage(securityGroupRule.getKey(), direction, ar, "No violation found"));
-            }
-        }
-        logger.println("Compliance check for AWS security groups pass with no violation");
-        return false;
-    }
-
-    private Boolean checkTagPolicyViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper,
-                                         ViolationHelper violation, PrintStream logger, String policyId) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        List<TagPolicyViolationsCheckRequest> instanceTagsList = cf.getInstancesTags();
-        if (instanceTagsList.isEmpty()) {
-            logger.println("No Instance TAGs were found in the Cloudformation template");
-        } else {
-            StringBuffer violationMsg = new StringBuffer();
-            for (TagPolicyViolationsCheckRequest instanceTags : instanceTagsList) {
-                String jsonTagPolicyViolation = mapper.writeValueAsString(instanceTags);
-                TagPolicyViolationsResponse tagPolicyViolationsResponse = violation.checkTagViolation(stHelper, jsonTagPolicyViolation, policyId);
-                if (tagPolicyViolationsResponse.isViolated()) {
-                    for (TagPolicyViolation tagViolation: tagPolicyViolationsResponse.getViolations())
-                        violationMsg.append(tagViolation.toString()).append("\n");
-                }
-            }
-            logger.println("----------------------------------------------------------------------");
-            if (violationMsg.toString().isEmpty()) {
-                logger.println("No instance TAGs violations were found");
-            } else {
-                logger.print(violationMsg.toString());
-                logger.println("----------------------------------------------------------------------");
-                return true;
-            }
-            logger.println("----------------------------------------------------------------------");
-        }
-        return false;
-    }
-
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
         final DescriptorImpl descriptor = getDescriptor();
@@ -172,19 +100,23 @@ public class ComplianceCheckBuilder extends Builder {
             List<FilePath> buildFiles = build.getWorkspace().list();
             logger.println(String.format("Build HTTP connection to host '%s'", host));
             HttpHelper stHelper = new HttpHelper(host, password, username);
+            ViolationHelper violation = new ViolationHelper();
             for (FilePath filePath: buildFiles) {
                 if (!filePath.getName().toLowerCase().endsWith(".json")) {continue;}
-                ViolationHelper violation = new ViolationHelper();
+                logger.println("----------------------------------------------------------------------");
                 logger.println(String.format("Compliance check for Cloudformation template '%s'", filePath.getName()));
                 CloudFormationTemplateProcessor cf = new CloudFormationTemplateProcessor(filePath.getRemote());
                 logger.println("Checking USP violation for AWS security groups");
-                if (checkUspViolation(cf, stHelper, violation, logger)) {
+                if (violation.checkUspViolation(cf, stHelper, violation, logger)) {
+                    logger.println("----------------------------------------------------------------------");
                     return false;
                 }
                 logger.println("Checking policy TAGs violation for AWS Instances");
-                if (checkTagPolicyViolation(cf, stHelper, violation, logger, policyId)) {
+                if (violation.checkTagPolicyViolation(cf, stHelper, violation, logger, policyId)) {
+                    logger.println("----------------------------------------------------------------------");
                     return false;
                 }
+                logger.println("----------------------------------------------------------------------");
             }
             logger.println(green("No violations were found, GOOD TO GO"));
             return true;
@@ -281,7 +213,7 @@ public class ComplianceCheckBuilder extends Builder {
 
         public FormValidation doCheckHost(@QueryParameter String value) {
             if (value.length() == 0) {
-                return FormValidation.error("Please enter a host, either alias, fulle domain name or IP address");
+                return FormValidation.error("Please enter a host, either alias, full domain name or IP address");
 //            } else {
 //                try {
 //                    SubnetUtils network = new SubnetUtils(value + "/32");

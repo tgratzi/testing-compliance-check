@@ -12,5 +12,6 @@ public class Attributes {
     public static final String INGRESS = "SecurityGroupIngress";
     public static final String MANDATORY_REQUIREMENT_TYPE = "mandatory_tags";
     public static final String OUTBOUND = "Outbound";
+    public static final String RESOURCES = "Resources";
     public static final String VALID_VALUES_REQUIREMENT_TYPE = "valid_values";
 }
