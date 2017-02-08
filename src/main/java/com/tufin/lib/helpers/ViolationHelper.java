@@ -2,13 +2,13 @@ package com.tufin.lib.helpers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tufin.lib.dataTypes.accessrequest.AccessRequest;
-import com.tufin.lib.dataTypes.securitygroup.SecurityGroup;
-import com.tufin.lib.dataTypes.securitypolicyviolation.SecurityPolicyViolationsForMultiAr;
-import com.tufin.lib.dataTypes.tagpolicy.TagPolicyDetailedResponse;
-import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolation;
-import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsCheckRequest;
-import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsResponse;
+import com.tufin.lib.datatypes.accessrequest.AccessRequest;
+import com.tufin.lib.datatypes.securitygroup.SecurityGroup;
+import com.tufin.lib.datatypes.securitypolicyviolation.SecurityPolicyViolationsForMultiAr;
+import com.tufin.lib.datatypes.tagpolicy.TagPolicyDetailedResponse;
+import com.tufin.lib.datatypes.tagpolicy.TagPolicyViolation;
+import com.tufin.lib.datatypes.tagpolicy.TagPolicyViolationsCheckRequest;
+import com.tufin.lib.datatypes.tagpolicy.TagPolicyViolationsResponse;
 import org.json.simple.JSONObject;
 
 import java.io.IOException;
@@ -34,16 +34,18 @@ public class ViolationHelper {
     private static final String APPLICATION_XML = "application/xml";
     private static final String APPLICATION_JSON = "application/json";
 
-    private Logger logger;
+    private PrintStream logger;
 
-    public ViolationHelper() {
-        logger = Logger.getLogger(ViolationHelper.class.getName());
+    public ViolationHelper() {}
+
+    public ViolationHelper(PrintStream logger) {
+        this.logger = logger;
     }
 
-    public ViolationHelper(Level level, OutputStream outputStream) {
-        BuildComplianceLog complianceLog = new BuildComplianceLog(getClass().getName(), level, outputStream);
-        this.logger = complianceLog.getLogger();
-    }
+//    public ViolationHelper(Level level, OutputStream outputStream) {
+//        BuildComplianceLog complianceLog = new BuildComplianceLog(getClass().getName(), level, outputStream);
+//        this.logger = complianceLog.getLogger();
+//    }
 
     public SecurityPolicyViolationsForMultiAr checkUSPAccessRequestViolation(HttpHelper stHelper, String str) throws IOException{
         System.out.println("Checking USP access request violation");
@@ -79,8 +81,7 @@ public class ViolationHelper {
         return errorMsg.toString();
     }
 
-    public Boolean checkUspViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper, ViolationHelper violation,
-                                      PrintStream logger) throws IOException {
+    public Boolean checkUspViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper, ViolationHelper violation) throws IOException {
         logger.println("Running compliance check for AWS security group");
         Map<String, List<SecurityGroup>> securityGroupRules = cf.getSecurityGroupRules();
         if (securityGroupRules.isEmpty()) {
@@ -109,7 +110,7 @@ public class ViolationHelper {
     }
 
     public Boolean checkTagPolicyViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper,
-                                            ViolationHelper violation, PrintStream logger, String policyId) throws IOException {
+                                            ViolationHelper violation, String policyId) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         Map<String, TagPolicyViolationsCheckRequest> instanceTagsList = cf.getInstancesTags();
         if (instanceTagsList.isEmpty()) {
@@ -117,13 +118,15 @@ public class ViolationHelper {
         } else {
             StringBuffer violationMsg = new StringBuffer();
             for (Map.Entry<String, TagPolicyViolationsCheckRequest> instanceTags : instanceTagsList.entrySet()) {
-                String jsonTagPolicyViolation = mapper.writeValueAsString(instanceTags);
+                String jsonTagPolicyViolation = mapper.writeValueAsString(instanceTags.getValue());
                 TagPolicyViolationsResponse tagPolicyViolationsResponse = violation.checkTagViolation(stHelper, jsonTagPolicyViolation, policyId);
                 if (tagPolicyViolationsResponse.isViolated()) {
                     for (TagPolicyViolation tagViolation: tagPolicyViolationsResponse.getViolations()){
                         violationMsg.append("Instance Name: ").append(instanceTags.getKey()).append(", ");
                         violationMsg.append(tagViolation.toString()).append("\n");
                     }
+                    logger.println(violationMsg.toString());
+                    return true;
                 }
             }
             if (violationMsg.toString().isEmpty()) {

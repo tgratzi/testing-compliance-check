@@ -1,4 +1,4 @@
-package com.tufin.lib.dataTypes.tagpolicy;
+package com.tufin.lib.datatypes.tagpolicy;
 
 
 import java.util.HashMap;

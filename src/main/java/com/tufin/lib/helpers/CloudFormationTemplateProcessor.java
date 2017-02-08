@@ -6,16 +6,17 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.mifmif.common.regex.Generex;
-import com.tufin.lib.dataTypes.securitygroup.SecurityGroup;
-import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsCheckRequest;
+import com.tufin.lib.datatypes.securitygroup.SecurityGroup;
+import com.tufin.lib.datatypes.tagpolicy.TagPolicyViolationsCheckRequest;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.*;
 
-import static com.tufin.lib.dataTypes.generic.Attributes.*;
+import static com.tufin.lib.datatypes.generic.Attributes.*;
 
 
 /**
@@ -38,6 +39,7 @@ public class CloudFormationTemplateProcessor {
     private ObjectMapper objectMapper = new ObjectMapper();
     private final JsonNode jsonRoot;
     private Boolean isCloudformation;
+    private PrintStream logger;
     private Map<String, List<SecurityGroup>> securityGroupRules = new HashMap<String, List<SecurityGroup>>();
     private Map<String, TagPolicyViolationsCheckRequest> instancesTags = new HashMap<String, TagPolicyViolationsCheckRequest>();
 
@@ -51,8 +53,9 @@ public class CloudFormationTemplateProcessor {
         return instancesTags;
     }
 
-    public CloudFormationTemplateProcessor(String file) throws IOException {
+    public CloudFormationTemplateProcessor(String file, PrintStream logger) throws IOException {
         JSONParser parser = new JSONParser();
+        this.logger = logger;
         try {
             this.jsonRoot = objectMapper.readTree(parser.parse(new FileReader(file)).toString());
             if (this.jsonRoot.has(RESOURCES)) {
@@ -78,7 +81,6 @@ public class CloudFormationTemplateProcessor {
                 JsonNode securityEgressNode = resourceNode.getValue().findPath(EGRESS);
                 if (securityEgressNode.isNull() && securityIngressNode.isNull())
                     break;
-
                 Map<String, JsonNode> securityGroupNodeTypes = new HashMap<String, JsonNode>();
                 securityGroupNodeTypes.put(INGRESS, securityIngressNode);
                 securityGroupNodeTypes.put(EGRESS, securityEgressNode);
@@ -105,7 +107,7 @@ public class CloudFormationTemplateProcessor {
             for (JsonNode securityGroupNode: securityGroupNodes){
                 JsonNode securityGroupValues = getSecurityGroupValues(securityGroupNode);
                 if (securityGroupValues.size() == 0) {
-                    System.out.println("Failed to process security group");
+                    logger.println("Failed to process security group");
                     return (new ArrayList<SecurityGroup>());
                 }
                 try {

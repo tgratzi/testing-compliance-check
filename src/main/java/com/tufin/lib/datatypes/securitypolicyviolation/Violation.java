@@ -1,6 +1,5 @@
-package com.tufin.lib.dataTypes.securitypolicyviolation;
+package com.tufin.lib.datatypes.securitypolicyviolation;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.simple.JSONObject;
 
 

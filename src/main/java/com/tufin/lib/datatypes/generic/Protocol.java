@@ -1,4 +1,4 @@
-package com.tufin.lib.dataTypes.generic;
+package com.tufin.lib.datatypes.generic;
 
 
 public enum Protocol {

@@ -1,16 +1,8 @@
 package com.tufin.jenkins;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolation;
-import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsCheckRequest;
-import com.tufin.lib.dataTypes.tagpolicy.TagPolicyViolationsResponse;
 import com.tufin.lib.helpers.CloudFormationTemplateProcessor;
-import com.tufin.lib.helpers.JaxbAccessRequestBuilder;
-import com.tufin.lib.dataTypes.securitygroup.SecurityGroup;
-import com.tufin.lib.dataTypes.accessrequest.AccessRequest;
 import com.tufin.lib.helpers.HttpHelper;
 import com.tufin.lib.helpers.ViolationHelper;
-import com.tufin.lib.dataTypes.securitypolicyviolation.SecurityPolicyViolationsForMultiAr;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Extension;
@@ -67,9 +59,6 @@ public class ComplianceCheckBuilder extends Builder {
         this.policyId = policyId;
     }
 
-    /**
-     * We'll use this from the {@code config.jelly}.
-     */
     public String getHost() {
         return host;
     }
@@ -100,23 +89,27 @@ public class ComplianceCheckBuilder extends Builder {
             List<FilePath> buildFiles = build.getWorkspace().list();
             logger.println(String.format("Build HTTP connection to host '%s'", host));
             HttpHelper stHelper = new HttpHelper(host, password, username);
-            ViolationHelper violation = new ViolationHelper();
+            ViolationHelper violation = new ViolationHelper(logger);
             for (FilePath filePath: buildFiles) {
                 if (!filePath.getName().toLowerCase().endsWith(".json")) {continue;}
-                logger.println("----------------------------------------------------------------------");
                 logger.println(String.format("Compliance check for Cloudformation template '%s'", filePath.getName()));
-                CloudFormationTemplateProcessor cf = new CloudFormationTemplateProcessor(filePath.getRemote());
-                logger.println("Checking USP violation for AWS security groups");
-                if (violation.checkUspViolation(cf, stHelper, violation, logger)) {
+                CloudFormationTemplateProcessor cf = new CloudFormationTemplateProcessor(filePath.getRemote(), logger);
+                if (cf.getIsCloudformation()) {
+                    logger.println("Checking USP violation for AWS security groups");
+                    if (violation.checkUspViolation(cf, stHelper, violation)) {
+                        logger.println("----------------------------------------------------------------------");
+                        return false;
+                    }
+                    logger.println("Checking policy TAGs violation for AWS Instances");
+                    if (violation.checkTagPolicyViolation(cf, stHelper, violation, policyId)) {
+                        logger.println("----------------------------------------------------------------------");
+                        return false;
+                    }
                     logger.println("----------------------------------------------------------------------");
-                    return false;
-                }
-                logger.println("Checking policy TAGs violation for AWS Instances");
-                if (violation.checkTagPolicyViolation(cf, stHelper, violation, logger, policyId)) {
+                } else {
+                    logger.println("The Json file is not a Cloudformation template, skip");
                     logger.println("----------------------------------------------------------------------");
-                    return false;
                 }
-                logger.println("----------------------------------------------------------------------");
             }
             logger.println(green("No violations were found, GOOD TO GO"));
             return true;

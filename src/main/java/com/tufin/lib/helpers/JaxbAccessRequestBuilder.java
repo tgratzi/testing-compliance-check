@@ -1,10 +1,10 @@
 package com.tufin.lib.helpers;
 
 
-import com.tufin.lib.dataTypes.accessrequest.*;
-import com.tufin.lib.dataTypes.generic.PreDefinedService;
-import com.tufin.lib.dataTypes.generic.Protocol;
-import com.tufin.lib.dataTypes.securitygroup.SecurityGroup;
+import com.tufin.lib.datatypes.accessrequest.*;
+import com.tufin.lib.datatypes.generic.PreDefinedService;
+import com.tufin.lib.datatypes.generic.Protocol;
+import com.tufin.lib.datatypes.securitygroup.SecurityGroup;
 import org.apache.commons.net.util.SubnetUtils;
 
 import javax.xml.bind.JAXBContext;
@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.tufin.lib.dataTypes.generic.Attributes.INGRESS;
+import static com.tufin.lib.datatypes.generic.Attributes.INGRESS;
 
 /**
  * Access request builder

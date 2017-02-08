@@ -1,6 +1,6 @@
-package com.tufin.lib.dataTypes.securitypolicyviolation;
+package com.tufin.lib.datatypes.securitypolicyviolation;
 
-import com.tufin.lib.dataTypes.generic.Elements;
+import com.tufin.lib.datatypes.generic.Elements;
 import org.json.simple.JSONObject;
 
 

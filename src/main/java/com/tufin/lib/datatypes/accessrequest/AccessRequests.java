@@ -1,4 +1,4 @@
-package com.tufin.lib.dataTypes.accessrequest;
+package com.tufin.lib.datatypes.accessrequest;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;

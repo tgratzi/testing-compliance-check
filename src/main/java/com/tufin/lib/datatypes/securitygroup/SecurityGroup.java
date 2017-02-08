@@ -1,10 +1,10 @@
-package com.tufin.lib.dataTypes.securitygroup;
+package com.tufin.lib.datatypes.securitygroup;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import static com.tufin.lib.dataTypes.generic.Attributes.*;
+import static com.tufin.lib.datatypes.generic.Attributes.*;
 
 
 /**

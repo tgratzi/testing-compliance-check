@@ -1,8 +1,8 @@
-package com.tufin.lib.dataTypes.tagpolicy;
+package com.tufin.lib.datatypes.tagpolicy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tufin.lib.dataTypes.generic.Elements;
+import com.tufin.lib.datatypes.generic.Elements;
 import org.json.simple.JSONObject;
 
 import java.util.*;

@@ -1,4 +1,4 @@
-package com.tufin.lib.dataTypes.accessrequest;
+package com.tufin.lib.datatypes.accessrequest;
 
 
 public abstract class NetworkAbstract {

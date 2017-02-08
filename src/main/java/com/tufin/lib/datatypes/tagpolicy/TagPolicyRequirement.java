@@ -1,7 +1,7 @@
-package com.tufin.lib.dataTypes.tagpolicy;
+package com.tufin.lib.datatypes.tagpolicy;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.tufin.lib.dataTypes.generic.Elements;
+import com.tufin.lib.datatypes.generic.Elements;
 
 import java.util.ArrayList;
 import java.util.List;
