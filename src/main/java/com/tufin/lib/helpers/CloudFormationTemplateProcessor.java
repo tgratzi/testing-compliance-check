@@ -58,45 +58,43 @@ public class CloudFormationTemplateProcessor {
         this.logger = logger;
         try {
             this.jsonRoot = objectMapper.readTree(parser.parse(new FileReader(file)).toString());
-            if (this.jsonRoot.has(RESOURCES)) {
-                JsonNode resourcesRoot = this.jsonRoot.get(RESOURCES);
-                System.out.print(resourcesRoot);
-                processCF(resourcesRoot);
-                this.isCloudformation = true;
-            } else {
-                this.isCloudformation = false;
-            }
         } catch (ParseException ex) {
             throw new IOException("Failed to parse file name " + file + ", Error: " + ex.getMessage());
         }
     }
 
-    private void processCF(JsonNode resourcesRoot) throws IOException {
-        Iterator<Map.Entry<String, JsonNode>> fields = resourcesRoot.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> resourceNode = fields.next();
-            JsonNode typeNode = resourceNode.getValue().get("Type");
-            if (typeNode != null && SECURITY_GROUP_TYPE.equals(typeNode.textValue())) {
-                JsonNode securityIngressNode = resourceNode.getValue().findPath(INGRESS);
-                JsonNode securityEgressNode = resourceNode.getValue().findPath(EGRESS);
-                if (securityEgressNode.isNull() && securityIngressNode.isNull())
-                    break;
-                Map<String, JsonNode> securityGroupNodeTypes = new HashMap<String, JsonNode>();
-                securityGroupNodeTypes.put(INGRESS, securityIngressNode);
-                securityGroupNodeTypes.put(EGRESS, securityEgressNode);
-                for (Map.Entry<String, JsonNode> securityType: securityGroupNodeTypes.entrySet()) {
-                    if (securityType.getValue().size() != 0) {
-                        List<SecurityGroup> rules = extractRule(securityType.getValue(), securityType.getKey());
-                        if (rules.isEmpty()) {
-//                            this.securityGroupRules = new HashMap<String, List<SecurityGroup>>();
+    public void processCF() throws IOException {
+        if (! jsonRoot.has(RESOURCES)) {
+            this.isCloudformation = false;
+        } else {
+            JsonNode resourcesRoot = this.jsonRoot.get(RESOURCES);
+            this.isCloudformation = true;
+            Iterator<Map.Entry<String, JsonNode>> fields = resourcesRoot.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> resourceNode = fields.next();
+                JsonNode typeNode = resourceNode.getValue().get("Type");
+                if (typeNode != null && SECURITY_GROUP_TYPE.equals(typeNode.textValue())) {
+                    JsonNode securityIngressNode = resourceNode.getValue().findPath(INGRESS);
+                    JsonNode securityEgressNode = resourceNode.getValue().findPath(EGRESS);
+                    if (securityEgressNode.isNull() && securityIngressNode.isNull())
+                        break;
+                    Map<String, JsonNode> securityGroupNodeTypes = new HashMap<String, JsonNode>();
+                    securityGroupNodeTypes.put(INGRESS, securityIngressNode);
+                    securityGroupNodeTypes.put(EGRESS, securityEgressNode);
+                    for (Map.Entry<String, JsonNode> securityType : securityGroupNodeTypes.entrySet()) {
+                        if (securityType.getValue().size() != 0) {
+                            List<SecurityGroup> rules = extractRule(securityType.getValue(), securityType.getKey());
+                            if (rules.isEmpty()) {
+                                //                            this.securityGroupRules = new HashMap<String, List<SecurityGroup>>();
+                                this.securityGroupRules.put(resourceNode.getKey(), rules);
+                                continue;
+                            }
                             this.securityGroupRules.put(resourceNode.getKey(), rules);
-                            continue;
                         }
-                        this.securityGroupRules.put(resourceNode.getKey(), rules);
                     }
+                } else if (typeNode != null && INSTANCE_TYPE.equals(typeNode.textValue())) {
+                    this.instancesTags.put(resourceNode.getKey(), getTagFromInstance(resourceNode));
                 }
-            } else if (typeNode != null && INSTANCE_TYPE.equals(typeNode.textValue())) {
-                this.instancesTags.put(resourceNode.getKey(), getTagFromInstance(resourceNode));
             }
         }
     }
@@ -171,7 +169,7 @@ public class CloudFormationTemplateProcessor {
             try {
                 value = getCidrIpFromParam(refObject);
             } catch (NullPointerException ex) {
-                return "";
+                throw new IOException("Failed to get CIDR/IP value");
             }
         }
         return value;

@@ -19,6 +19,10 @@ import org.kohsuke.stapler.QueryParameter;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -47,16 +51,23 @@ public class ComplianceCheckBuilder extends Builder {
     private String username;
     private String password;
     private String policyId;
+    private String jsonPath;
+    private String severity;
+    private String environment;
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
     public ComplianceCheckBuilder(boolean useOwnServerCredentials, final String host, final String username,
-                                  final String password, final String policyId) {
+                                  final String password, final String policyId, String jsonPath, String severity,
+                                  String environment) {
         this.useLocalSTCredentials = useOwnServerCredentials;
         this.host = host;
         this.username = username;
         this.password = password;
         this.policyId = policyId;
+        setJsonPath(jsonPath);
+        setSeverity(severity);
+        setEnvironment(environment);
     }
 
     public String getHost() {
@@ -75,6 +86,30 @@ public class ComplianceCheckBuilder extends Builder {
         return policyId;
     }
 
+    public String getJsonPath() {
+        return jsonPath;
+    }
+
+    public void setJsonPath(String jsonPath) {
+        this.jsonPath = jsonPath;
+    }
+
+    public String getSeverity() {
+        return severity;
+    }
+
+    public void setSeverity(String severity) {
+        this.severity = severity;
+    }
+
+    public String getEnvironment() {
+        return environment;
+    }
+
+    public void setEnvironment(String environment) {
+        this.environment = environment;
+    }
+
     private String red(String message) { return "\033[31m" + message + "\033[0m"; }
 
     private String green(String message) { return "\033[32m" + message + "\033[0m"; }
@@ -82,18 +117,35 @@ public class ComplianceCheckBuilder extends Builder {
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
         final DescriptorImpl descriptor = getDescriptor();
+        PrintStream logger = listener.getLogger();
         try {
-            PrintStream logger = listener.getLogger();
-            final String password = this.password.isEmpty() ? descriptor.getPassword() : this.password ;
-            logger.println("Reading the Cloudformation JSON files");
-            List<FilePath> buildFiles = build.getWorkspace().list();
-            logger.println(String.format("Build HTTP connection to host '%s'", host));
-            HttpHelper stHelper = new HttpHelper(host, password, username);
+            logger.println(severity);
             ViolationHelper violation = new ViolationHelper(logger);
-            for (FilePath filePath: buildFiles) {
-                if (!filePath.getName().toLowerCase().endsWith(".json")) {continue;}
-                logger.println(String.format("Compliance check for Cloudformation template '%s'", filePath.getName()));
-                CloudFormationTemplateProcessor cf = new CloudFormationTemplateProcessor(filePath.getRemote(), logger);
+            logger.println(String.format("Building HTTP connection to host '%s'", host));
+            HttpHelper stHelper = new HttpHelper(host, password, username);
+            String dirPath = build.getWorkspace().getRemote();
+            if (! jsonPath.equalsIgnoreCase(".") && ! jsonPath.isEmpty()) {
+                dirPath += jsonPath;
+                if (! Files.isDirectory(Paths.get(dirPath))) {
+                    System.out.println("Not a directory " + dirPath);
+                    return false;
+                }
+            }
+
+            Path currentPath = Paths.get(dirPath);
+            DirectoryStream<Path> files = Files.newDirectoryStream(currentPath, "*.json");
+            for (Path filePath: files) {
+                logger.println(String.format("Compliance check for Cloudformation template '%s'", filePath.getFileName()));
+                CloudFormationTemplateProcessor cf = new CloudFormationTemplateProcessor(filePath.toString(), logger);
+                try {
+                    cf.processCF();
+                } catch (IOException ex) {
+                    logger.println(ex.getMessage());
+                    if (severity.equalsIgnoreCase("critical")) {
+                        return true;
+                    }
+                    continue;
+                }
                 if (cf.getIsCloudformation()) {
                     logger.println("Checking USP violation for AWS security groups");
                     if (violation.checkUspViolation(cf, stHelper, violation)) {
@@ -101,7 +153,8 @@ public class ComplianceCheckBuilder extends Builder {
                         return false;
                     }
                     logger.println("Checking policy TAGs violation for AWS Instances");
-                    if (violation.checkTagPolicyViolation(cf, stHelper, violation, policyId)) {
+                    Boolean isViolated = violation.checkTagPolicyViolation(cf, stHelper, violation, policyId);
+                    if (isViolated && severity.equalsIgnoreCase("critical")) {
                         logger.println("----------------------------------------------------------------------");
                         return false;
                     }
@@ -246,6 +299,21 @@ public class ComplianceCheckBuilder extends Builder {
                 m.add(new ListBoxModel.Option(message, message));
                 return m; // Return empty list of project names
             }
+        }
+
+        public ListBoxModel doFillSeverityItems() throws IOException {
+            ListBoxModel m = new ListBoxModel();
+            m.add("Critical", "critical");
+            m.add("Major", "major");
+            m.add("low", "low");
+            return m;
+        }
+
+        public ListBoxModel doFillEnvironmentItems() throws IOException {
+            ListBoxModel m = new ListBoxModel();
+            m.add("Production", "production");
+            m.add("Test", "test");
+            return m;
         }
     }
 }

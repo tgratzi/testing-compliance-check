@@ -5,11 +5,19 @@
         <f:select/>
     </f:entry>
 
-    <!-- Creates a text field that shows the value of the "name" property. When submitted, it will be passed to the
-                corresponding constructor parameter. -->
-    <f:optionalBlock title="SecureTrack connection"
-                     inline="true" field="useLocalSTCredentials" negative="true"
-                     checked="${instance==null?true:!instance.useLocalSTCredentials}">
+    <f:advanced title="Advanced Integration Options">
+        <f:entry title="Severity to Fail" field="severity">
+            <f:select/>
+        </f:entry>
+
+        <f:entry title="Environment" field="environment">
+            <f:select/>
+        </f:entry>
+
+        <f:entry title="JSON Files Path" field="jsonPath">
+            <f:textbox default="."/>
+        </f:entry>
+
         <f:entry title="Host" field="host">
             <f:textbox default="${descriptor.host}" />
         </f:entry>
@@ -21,8 +29,9 @@
         <f:entry title="Password" field="password">
             <f:password value="${descriptor.getPassword()}"/>
         </f:entry>
+
         <f:validateButton title="Test Connection" progress="Testing..."
                           method="testTufinConnection"  with="host,password,username" />
-    </f:optionalBlock>
+    </f:advanced>
 
 </j:jelly>
