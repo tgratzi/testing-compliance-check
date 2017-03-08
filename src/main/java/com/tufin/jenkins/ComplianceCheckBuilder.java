@@ -1,5 +1,6 @@
 package com.tufin.jenkins;
 
+import com.tufin.lib.datatypes.generic.Severity;
 import com.tufin.lib.helpers.CloudFormationTemplateProcessor;
 import com.tufin.lib.helpers.HttpHelper;
 import com.tufin.lib.helpers.ViolationHelper;
@@ -27,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import static com.tufin.lib.datatypes.generic.Attributes.PROD_ENVIRONMENT;
+import static com.tufin.lib.datatypes.generic.Attributes.TEST_ENVIRONMENT;
 
 /**
  * Sample {@link Builder}.
@@ -110,16 +113,13 @@ public class ComplianceCheckBuilder extends Builder {
         this.environment = environment;
     }
 
-    private String red(String message) { return "\033[31m" + message + "\033[0m"; }
-
-    private String green(String message) { return "\033[32m" + message + "\033[0m"; }
-
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
         final DescriptorImpl descriptor = getDescriptor();
         PrintStream logger = listener.getLogger();
+        int severityLevel = 0;
+        boolean is_processed = false;
         try {
-            logger.println(severity);
             ViolationHelper violation = new ViolationHelper(logger);
             logger.println(String.format("Building HTTP connection to host '%s'", host));
             HttpHelper stHelper = new HttpHelper(host, password, username);
@@ -135,7 +135,7 @@ public class ComplianceCheckBuilder extends Builder {
             Path currentPath = Paths.get(dirPath);
             DirectoryStream<Path> files = Files.newDirectoryStream(currentPath, "*.json");
             for (Path filePath: files) {
-                logger.println(String.format("Compliance check for Cloudformation template '%s'", filePath.getFileName()));
+                logger.println(String.format("Running compliance check for Cloudformation template '%s'", filePath.getFileName()));
                 CloudFormationTemplateProcessor cf = new CloudFormationTemplateProcessor(filePath.toString(), logger);
                 try {
                     cf.processCF();
@@ -147,27 +147,37 @@ public class ComplianceCheckBuilder extends Builder {
                     continue;
                 }
                 if (cf.getIsCloudformation()) {
+                    is_processed = true;
                     logger.println("Checking USP violation for AWS security groups");
-                    if (violation.checkUspViolation(cf, stHelper, violation)) {
+                    severityLevel = violation.checkUspViolation(cf, stHelper, violation);
+                    if (environment.equalsIgnoreCase(PROD_ENVIRONMENT) && severityLevel >= Severity.getSeverityValueByName(severity.toUpperCase())) {
                         logger.println("----------------------------------------------------------------------");
                         return false;
                     }
                     logger.println("Checking policy TAGs violation for AWS Instances");
-                    Boolean isViolated = violation.checkTagPolicyViolation(cf, stHelper, violation, policyId);
-                    if (isViolated && severity.equalsIgnoreCase("critical")) {
+                    severityLevel = violation.checkTagPolicyViolation(cf, stHelper, violation, "tp-102");
+                    if (environment.equalsIgnoreCase(PROD_ENVIRONMENT) && severityLevel >= Severity.getSeverityValueByName(severity.toUpperCase())) {
                         logger.println("----------------------------------------------------------------------");
                         return false;
                     }
                     logger.println("----------------------------------------------------------------------");
                 } else {
-                    logger.println("The Json file is not a Cloudformation template, skip");
+                    logger.println("Not a Cloudformation template");
                     logger.println("----------------------------------------------------------------------");
                 }
             }
-            logger.println(green("No violations were found, GOOD TO GO"));
+            if (is_processed) {
+                logger.println("No violations were found, GOOD TO GO");
+            } else {
+                logger.println(String.format("No files were found under the directory '%s'", dirPath));
+            }
             return true;
         } catch (IOException ex) {
+            logger.println(ex.getMessage());
+            if (severity.equalsIgnoreCase("critical")) {
                 throw ex;
+            }
+            return true;
         }
     }
 

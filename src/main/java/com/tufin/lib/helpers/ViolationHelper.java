@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tufin.lib.datatypes.accessrequest.AccessRequest;
 import com.tufin.lib.datatypes.securitygroup.SecurityGroup;
 import com.tufin.lib.datatypes.securitypolicyviolation.SecurityPolicyViolationsForMultiAr;
+import com.tufin.lib.datatypes.securitypolicyviolation.Violation;
 import com.tufin.lib.datatypes.tagpolicy.TagPolicyDetailedResponse;
 import com.tufin.lib.datatypes.tagpolicy.TagPolicyViolation;
 import com.tufin.lib.datatypes.tagpolicy.TagPolicyViolationsCheckRequest;
 import com.tufin.lib.datatypes.tagpolicy.TagPolicyViolationsResponse;
+import com.tufin.lib.datatypes.generic.Severity;
 import org.json.simple.JSONObject;
 
 import java.io.IOException;
@@ -65,33 +67,36 @@ public class ViolationHelper {
 
     public TagPolicyDetailedResponse getTagPolicies(HttpHelper stHelper) throws IOException {
         JSONObject response = stHelper.get(POLICY_URL);
-        return new TagPolicyDetailedResponse(response);
+        TagPolicyDetailedResponse tagPolicyDetailedResponse = new TagPolicyDetailedResponse(response);
+//        Map<String,String> policyNameId = tagPolicyDetailedResponse.getAllPolicyId();
+        return tagPolicyDetailedResponse;
     }
 
     private String formatMessage(String securityGroupName, String direction, AccessRequest accessRequest, String status) {
-        StringBuffer errorMsg = new StringBuffer();
-        errorMsg.append("=====================================================================").append('\n');
-        errorMsg.append("Status: ").append(status).append('\n');
-        errorMsg.append("Security Group: ").append(securityGroupName).append('\n');
-        errorMsg.append("Source: ").append(accessRequest.getSource()).append('\n');
-        errorMsg.append("Destination: ").append(accessRequest.getDestination()).append('\n');
-        errorMsg.append("Service: ").append(accessRequest.getService()).append('\n');
-        errorMsg.append("Direction: ").append(direction).append('\n');
-        errorMsg.append("=====================================================================");
-        return errorMsg.toString();
+        StringBuffer bufferMsg = new StringBuffer();
+        bufferMsg.append("----------------------------------------------------------------------").append('\n');
+        bufferMsg.append("Status: ").append(status).append('\n');
+        bufferMsg.append("Security Group: ").append(securityGroupName).append('\n');
+        bufferMsg.append("Source: ").append(accessRequest.getSource()).append('\n');
+        bufferMsg.append("Destination: ").append(accessRequest.getDestination()).append('\n');
+        bufferMsg.append("Service: ").append(accessRequest.getService()).append('\n');
+        bufferMsg.append("Direction: ").append(direction).append('\n');
+        bufferMsg.append("----------------------------------------------------------------------").append('\n');
+        return bufferMsg.toString();
     }
 
-    public Boolean checkUspViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper, ViolationHelper violation) throws IOException {
-        logger.println("Running compliance check for AWS security group");
+    public int checkUspViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper, ViolationHelper violation) throws IOException {
+        System.out.println("Running compliance check for AWS security group");
+        int severityLevel = 0;
         Map<String, List<SecurityGroup>> securityGroupRules = cf.getSecurityGroupRules();
         if (securityGroupRules.isEmpty()) {
             logger.println("No security group was found");
-            return false; //If no rules in security group no traffic is allowed
+            return severityLevel; //If no rules in security group no traffic is allowed
         }
         for(Map.Entry<String, List<SecurityGroup>> securityGroupRule :  securityGroupRules.entrySet()) {
             if (securityGroupRule.getValue().isEmpty()) {
                 logger.println(String.format("Could not parse security group '%s'", securityGroupRule.getKey()));
-                return true;
+                return severityLevel;
             }
             String direction = securityGroupRule.getValue().get(0).getDirection();
             logger.println(String.format("Processing security group '%s'", securityGroupRule.getKey()));
@@ -100,42 +105,44 @@ public class ViolationHelper {
                 String accessRequestStr = rule.accessRequestBuilder(ar);
                 SecurityPolicyViolationsForMultiAr violationMultiAr = violation.checkUSPAccessRequestViolation(stHelper, accessRequestStr);
                 if (violationMultiAr.getSecurityPolicyViolationsForAr().isViolated()) {
+                    Violation violationResult = violationMultiAr.getSecurityPolicyViolationsForAr().getViolations();
+                    int violatedSeverity = Severity.getSeverityValueByName(violationResult.getSeverity().toUpperCase());
+                    severityLevel =  violatedSeverity > severityLevel ? violatedSeverity : severityLevel;
                     logger.println(formatMessage(securityGroupRule.getKey(), direction, ar, "VIOLATION FOUND"));
-                    return true;
+                    return severityLevel;
                 }
             }
         }
-        logger.println("Compliance check for AWS security groups pass with no violation");
-        return false;
+        logger.println("USP compliance check for AWS security groups pass successfully");
+        return severityLevel;
     }
 
-    public Boolean checkTagPolicyViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper,
-                                            ViolationHelper violation, String policyId) throws IOException {
+    public int checkTagPolicyViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper,
+                                                   ViolationHelper violation, String policyId) throws IOException {
+        int severityLevel = 0;
         ObjectMapper mapper = new ObjectMapper();
         Map<String, TagPolicyViolationsCheckRequest> instanceTagsList = cf.getInstancesTags();
         if (instanceTagsList.isEmpty()) {
             logger.println("No Instance TAGs were found in the Cloudformation template");
+            return severityLevel;
         } else {
             StringBuffer violationMsg = new StringBuffer();
             for (Map.Entry<String, TagPolicyViolationsCheckRequest> instanceTags : instanceTagsList.entrySet()) {
                 String jsonTagPolicyViolation = mapper.writeValueAsString(instanceTags.getValue());
                 TagPolicyViolationsResponse tagPolicyViolationsResponse = violation.checkTagViolation(stHelper, jsonTagPolicyViolation, policyId);
                 if (tagPolicyViolationsResponse.isViolated()) {
-                    for (TagPolicyViolation tagViolation: tagPolicyViolationsResponse.getViolations()){
+                    for (TagPolicyViolation tagViolation: tagPolicyViolationsResponse.getViolations()) {
+                        int violatedSeverity = Severity.getSeverityValueByName(tagViolation.getRequirementSeverity().toUpperCase());
+                        severityLevel =  violatedSeverity > severityLevel ? violatedSeverity : severityLevel;
                         violationMsg.append("Instance Name: ").append(instanceTags.getKey()).append(", ");
                         violationMsg.append(tagViolation.toString()).append("\n");
                     }
-                    logger.println(violationMsg.toString());
-                    return true;
+                    logger.print(violationMsg.toString());
+                    return severityLevel;
                 }
             }
-            if (violationMsg.toString().isEmpty()) {
-                logger.println("No instance TAGs violations were found");
-            } else {
-                logger.print(violationMsg.toString());
-                return true;
-            }
+            logger.println("No instance TAG violation was found");
         }
-        return false;
+        return severityLevel;
     }
 }

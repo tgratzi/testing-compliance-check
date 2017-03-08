@@ -82,4 +82,8 @@ public class TagPolicyViolation {
             return violationStr.toString();
         }
     }
+
+    public String getRequirementSeverity() {
+        return requirementSeverity;
+    }
 }

@@ -22,7 +22,6 @@ public class TagPolicy {
     private List requirements = new ArrayList();
 
     public TagPolicy(JsonNode node) {
-        System.out.println("tag policy");
         this.policyId = node.get(Elements.POLICY_ID).textValue();
         this.policyName = node.get(Elements.POLICY_NAME).textValue();
         this.policy_description = node.get(Elements.POLICY_DESCRIPTION).textValue();
@@ -70,7 +69,6 @@ public class TagPolicy {
                 m.put(tag, values);
             }
         }
-        System.out.println(m);
         return m;
     }
 }
