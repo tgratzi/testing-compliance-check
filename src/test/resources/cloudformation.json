@@ -1,0 +1,235 @@
+{
+	"AWSTemplateFormatVersion": "2017-03-09",
+	"Parameters": {
+		"MissingParam": {
+			"Type": "String",
+			"Description": "Missing param"
+		},
+		"CidrIp": {
+			"Type": "String",
+			"Description": "Enter ID of LBSecurityGroup attached ELB.",
+			"CidrIp": "0.0.0.0/0"
+		},
+		"ParamWithDefault": {
+			"Type": "String",
+			"Description": "Enter ID of SSHSecurityGroup attached CI server.",
+			"Default": "0.0.0.0/0"
+		},
+		"PatternReferance" : {
+            "Description" : "PatternReferance",
+            "Type" : "String",
+            "AllowedPattern" : "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$",
+            "ConstraintDescription" : "Must be in CIDR notation. To specify one specifc IPv4 address, append /32. eg: 192.168.1.100/32"
+        }
+	},
+	"Resources": {
+		"SecurityGroupWithCidrIP": {
+			"Type": "AWS::EC2::SecurityGroup",
+			"Properties": {
+				"GroupDescription": "Incoming traffic SecurityGroup testing with CidrIp",
+				"VpcId": {
+					"Ref": "VpcId"
+				},
+				"SecurityGroupIngress": [{
+					"IpProtocol": "tcp",
+					"FromPort": "8080",
+					"ToPort": "8080",
+					"CidrIp": "0.0.0.0/0"
+				}],
+				"Tags": [{
+					"Key": "Name",
+					"Value": "Web"
+				}]
+			}
+		},
+		"SecurityGroupWithCidrIPRef" : {
+			"Type" : "AWS::EC2::SecurityGroup",
+			"Properties" : {
+				"GroupDescription" : "Enable ports needed by Aerospike",
+				"VpcId" : { "Ref" : "VPC" },
+				"SecurityGroupIngress" : [ 
+				{
+					"IpProtocol" : "tcp",
+					"FromPort" : "22",
+					"ToPort" : "22",
+					"CidrIp" : { "Ref" : "PatternReferance"}
+
+				}],
+				"Tags" : [ {"Key" : "StackID", "Value" : { "Ref" : "AWS::StackId"} } ]
+			}
+		},
+		"SecurityGroupWithSourceSecurityGroupIdWithDefaultParam": {
+			"Type": "AWS::EC2::SecurityGroup",
+			"Properties": {
+				"GroupDescription": "Testing SecurityGroup is missing relevat referance in the param section",
+				"VpcId": {
+					"Ref": "VpcId"
+				},
+				"SecurityGroupIngress": [{
+					"IpProtocol": "tcp",
+					"FromPort": "22",
+					"ToPort": "22",
+					"SourceSecurityGroupId": {
+						"Ref": "ParamWithDefault"
+					}
+				}]
+			}
+		},
+		"SecurityGroupWithCidrIPMutipleIngressObjects" : {
+			"Type" : "AWS::EC2::SecurityGroup",
+			"Properties" : {
+				"GroupDescription" : "Enable ports needed by Aerospike",
+				"VpcId" : { "Ref" : "VPC" },
+				"SecurityGroupIngress" : [ {
+					"IpProtocol" : "tcp",
+					"FromPort" : "3000",
+					"ToPort" : "3000",
+					"CidrIp" : "0.0.0.0/0"
+				},
+				{
+					"IpProtocol" : "tcp",
+					"FromPort" : "22",
+					"ToPort" : "22",
+					"CidrIp" : { "Ref" : "PatternReferance"}
+
+				},
+				{
+					"IpProtocol" : "tcp",
+					"FromPort" : "8081",
+					"ToPort" : "8081",
+					"CidrIp" : "0.0.0.0/0"
+
+				},
+				{
+					"IpProtocol" : "icmp",
+					"FromPort" : "-1",
+					"ToPort" : "-1",
+					"CidrIp" : "0.0.0.0/0"
+				} ],
+				"Tags" : [ {"Key" : "StackID", "Value" : { "Ref" : "AWS::StackId"} } ]
+			}
+		},
+		"SecurityGroupWithSourceSecurityGroupIdMissingParam": {
+			"Type": "AWS::EC2::SecurityGroup",
+			"Properties": {
+				"GroupDescription": "Income traffic SecurityGroup testing with referance",
+				"VpcId": {
+					"Ref": "VpcId"
+				},
+				"SecurityGroupIngress": [{
+					"IpProtocol": "tcp",
+					"FromPort": "22",
+					"ToPort": "22",
+					"SourceSecurityGroupId": {
+						"Ref": "MissingParam"
+					}
+				}],
+				"Tags": [{
+					"Key": "Name",
+					"Value": "SSH_inner"
+				}]
+			}
+		},
+		"SecurityGroupWithNestedSecurityGroup" : {
+		  "Type" : "AWS::EC2::SecurityGroup",
+		  "Properties" : {
+			"GroupDescription" : "Enable internal Web access",
+			"VpcId" : { "Ref" : "VpcId" },
+			"SecurityGroupIngress": [{
+			  "IpProtocol" : "tcp",
+			  "FromPort" : "8080",
+			  "ToPort" : "8080",
+			  "SourceSecurityGroupId" : { "Ref" : "SecurityGroupWithCidrIP" }
+			}],
+			"Tags" : [
+				{"Key" : "Name", "Value" : "Web"}
+			]
+		  }
+		},
+		"InstanceWithTAG": {
+			"Type": "AWS::EC2::Instance",
+			"Properties": {
+				"ImageId": {
+					"Ref": "ImageId"
+				},
+				"InstanceType": {
+					"Ref": "InstanceType"
+				},
+				"KeyName": {
+					"Ref": "KeyName"
+				},
+				"NetworkInterfaces": [{
+					"AssociatePublicIpAddress": "true",
+					"DeleteOnTermination": "true",
+					"GroupSet": [{
+						"Ref": "WebSecurityGroup"
+					},
+					{
+						"Ref": "SshInnerSecurityGroup"
+					}],
+					"SubnetId": {
+						"Ref": "SubnetId"
+					},
+					"DeviceIndex": "0"
+				}],
+				"Tags": [{
+					"Key": "Name",
+					"Value": "blue-web1"
+				},
+				{
+					"Key": "Side",
+					"Value": "blue"
+				},
+				{
+					"Key": "ServerType",
+					"Value": "web"
+				}],
+				"UserData": {
+					"Fn::Base64": {
+						"Fn::Join": ["",
+						["#! /bin/bash -v\n",
+						"getenforce\n",
+						"setenforce 0\n",
+						"sed -i 's/SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config\n",
+						"echo '\n' >> /etc/ssh/sshd_config\n",
+						"echo 'Port 22' >> /etc/ssh/sshd_config\n",
+						"mkdir /home/centos/.ssh\n",
+						"curl -s https://raw.githubusercontent.com/devops-book/cloudformation/master/authorized_keys >> /home/centos/.ssh/authorized_keys\n",
+						"chmod 600 /home/centos/.ssh/authorized_keys\n",
+						"chmod 700 /home/centos/.ssh\n",
+						"chown centos:centos -R /home/centos/.ssh\n",
+						"shutdown -r now\n"]]
+					}
+				}
+			}
+		},
+		"InstanceMissingTAG": {
+			"Type": "AWS::EC2::Instance",
+			"Properties": {
+				"ImageId": {
+					"Ref": "ImageId"
+				},
+				"InstanceType": {
+					"Ref": "InstanceType"
+				},
+				"KeyName": {
+					"Ref": "KeyName"
+				},
+				"NetworkInterfaces": [{
+					"AssociatePublicIpAddress": "true",
+					"DeleteOnTermination": "true",
+					"GroupSet": [{
+						"Ref": "WebSecurityGroup"
+					},
+					{
+						"Ref": "SshInnerSecurityGroup"
+					}],
+					"SubnetId": {
+						"Ref": "SubnetId"
+					},
+					"DeviceIndex": "0"
+				}]
+			}
+		}
+	}
+}

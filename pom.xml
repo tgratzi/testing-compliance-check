@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.tufin</groupId>
     <artifactId>tufin-compliance-check</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.2-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <name>Tufin Compliance Check</name>
     <description>Integration between AWS Cloudformation and Tufin SecureTrack for validate Sercurity group compliance</description>
@@ -43,7 +43,7 @@
         <developer>
             <id>tgratzi</id>
             <name>Tzachi Gratziani</name>
-            <email>tzachi.gratziani@tufin.com</email>
+            <email>support@tufin.com</email>
         </developer>
     </developers>
 
@@ -56,10 +56,10 @@
     -->
 
     <repositories>
-    <repository>
-      <id>repo.jenkins-ci.org</id>
-      <url>https://repo.jenkins-ci.org/public/</url>
-    </repository>
+        <repository>
+          <id>repo.jenkins-ci.org</id>
+          <url>https://repo.jenkins-ci.org/public/</url>
+        </repository>
     </repositories>
 
     <pluginRepositories>

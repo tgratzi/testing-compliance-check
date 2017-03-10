@@ -49,7 +49,7 @@ public class ViolationHelper {
 //        this.logger = complianceLog.getLogger();
 //    }
 
-    public SecurityPolicyViolationsForMultiAr checkUSPAccessRequestViolation(HttpHelper stHelper, String str) throws IOException{
+    public SecurityPolicyViolationsForMultiAr getUSPAccessRequestViolation(HttpHelper stHelper, String str) throws IOException{
         System.out.println("Checking USP access request violation");
         SecurityPolicyViolationsForMultiAr violationMultiAr = null;
         JSONObject response = stHelper.post(USP_URL, str, APPLICATION_XML);
@@ -57,7 +57,7 @@ public class ViolationHelper {
         return violationMultiAr;
     }
 
-    public TagPolicyViolationsResponse checkTagViolation(HttpHelper stHelper, String body, String policyId) throws IOException {
+    public TagPolicyViolationsResponse getTagViolation(HttpHelper stHelper, String body, String policyId) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         JSONObject response = (JSONObject) stHelper.post(TAG_URL + policyId, body, APPLICATION_JSON);
         JsonNode JsonNodeResponse = mapper.convertValue(response, JsonNode.class);
@@ -85,7 +85,7 @@ public class ViolationHelper {
         return bufferMsg.toString();
     }
 
-    public int checkUspViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper, ViolationHelper violation) throws IOException {
+    public int checkUspViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper) throws IOException {
         System.out.println("Running compliance check for AWS security group");
         int severityLevel = 0;
         Map<String, List<SecurityGroup>> securityGroupRules = cf.getSecurityGroupRules();
@@ -103,7 +103,7 @@ public class ViolationHelper {
             JaxbAccessRequestBuilder rule = new JaxbAccessRequestBuilder(securityGroupRule);
             for (AccessRequest ar: rule.getAccessRequestList()) {
                 String accessRequestStr = rule.accessRequestBuilder(ar);
-                SecurityPolicyViolationsForMultiAr violationMultiAr = violation.checkUSPAccessRequestViolation(stHelper, accessRequestStr);
+                SecurityPolicyViolationsForMultiAr violationMultiAr = getUSPAccessRequestViolation(stHelper, accessRequestStr);
                 if (violationMultiAr.getSecurityPolicyViolationsForAr().isViolated()) {
                     Violation violationResult = violationMultiAr.getSecurityPolicyViolationsForAr().getViolations();
                     int violatedSeverity = Severity.getSeverityValueByName(violationResult.getSeverity().toUpperCase());
@@ -117,8 +117,7 @@ public class ViolationHelper {
         return severityLevel;
     }
 
-    public int checkTagPolicyViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper,
-                                                   ViolationHelper violation, String policyId) throws IOException {
+    public int checkTagPolicyViolation(CloudFormationTemplateProcessor cf, HttpHelper stHelper, String policyId) throws IOException {
         int severityLevel = 0;
         ObjectMapper mapper = new ObjectMapper();
         Map<String, TagPolicyViolationsCheckRequest> instanceTagsList = cf.getInstancesTags();
@@ -129,7 +128,7 @@ public class ViolationHelper {
             StringBuffer violationMsg = new StringBuffer();
             for (Map.Entry<String, TagPolicyViolationsCheckRequest> instanceTags : instanceTagsList.entrySet()) {
                 String jsonTagPolicyViolation = mapper.writeValueAsString(instanceTags.getValue());
-                TagPolicyViolationsResponse tagPolicyViolationsResponse = violation.checkTagViolation(stHelper, jsonTagPolicyViolation, policyId);
+                TagPolicyViolationsResponse tagPolicyViolationsResponse = getTagViolation(stHelper, jsonTagPolicyViolation, policyId);
                 if (tagPolicyViolationsResponse.isViolated()) {
                     for (TagPolicyViolation tagViolation: tagPolicyViolationsResponse.getViolations()) {
                         int violatedSeverity = Severity.getSeverityValueByName(tagViolation.getRequirementSeverity().toUpperCase());

@@ -33,24 +33,28 @@ import static com.tufin.lib.datatypes.generic.Attributes.*;
 public class CloudFormationTemplateProcessor {
     private final static String SECURITY_GROUP_TYPE = "AWS::EC2::SecurityGroup";
     private final static String INSTANCE_TYPE = "AWS::EC2::Instance";
+    private final static String SECURITY_GROUP_INGRESS = "SecurityGroupIngress";
+    private final static String SECURITY_GROUP_EGRESS = "SecurityGroupEgress";
+    private final static String CIDR_IP = "CidrIp";
+    private final static String ALLOWED_PATTERN = "AllowedPattern";
+    private final static String TAGS = "Tags";
     private final static String REF = "Ref";
     private final static String DEFAULT = "Default";
 
     private ObjectMapper objectMapper = new ObjectMapper();
     private final JsonNode jsonRoot;
     private Boolean isCloudformation;
-    private PrintStream logger;
+    private PrintStream logger = null;
     private Map<String, List<SecurityGroup>> securityGroupRules = new HashMap<String, List<SecurityGroup>>();
     private Map<String, TagPolicyViolationsCheckRequest> instancesTags = new HashMap<String, TagPolicyViolationsCheckRequest>();
 
-    public Boolean getIsCloudformation() {return isCloudformation;}
-
-    public Map<String, List<SecurityGroup>> getSecurityGroupRules() {
-        return securityGroupRules;
-    }
-
-    public Map<String, TagPolicyViolationsCheckRequest> getInstancesTags() {
-        return instancesTags;
+    public CloudFormationTemplateProcessor(String file) throws IOException {
+        JSONParser parser = new JSONParser();
+        try {
+            this.jsonRoot = objectMapper.readTree(parser.parse(new FileReader(file)).toString());
+        } catch (ParseException ex) {
+            throw new IOException("Failed to parse file name " + file + ", Error: " + ex.getMessage());
+        }
     }
 
     public CloudFormationTemplateProcessor(String file, PrintStream logger) throws IOException {
@@ -61,6 +65,16 @@ public class CloudFormationTemplateProcessor {
         } catch (ParseException ex) {
             throw new IOException("Failed to parse file name " + file + ", Error: " + ex.getMessage());
         }
+    }
+
+    public Boolean getIsCloudformation() {return isCloudformation;}
+
+    public Map<String, List<SecurityGroup>> getSecurityGroupRules() {
+        return securityGroupRules;
+    }
+
+    public Map<String, TagPolicyViolationsCheckRequest> getInstancesTags() {
+        return instancesTags;
     }
 
     public void processCF() throws IOException {
@@ -104,8 +118,9 @@ public class CloudFormationTemplateProcessor {
         if (! securityGroupNodes.isNull()) {
             for (JsonNode securityGroupNode: securityGroupNodes){
                 JsonNode securityGroupValues = getSecurityGroupValues(securityGroupNode);
-                if (securityGroupValues.size() == 0) {
-                    logger.println("Failed to process security group");
+                if (securityGroupValues == null || securityGroupValues.size() == 0) {
+                    if (logger != null)
+                        logger.println("Failed to process security group");
                     return (new ArrayList<SecurityGroup>());
                 }
                 try {
@@ -133,7 +148,7 @@ public class CloudFormationTemplateProcessor {
             JsonNode value = item.getValue();
             if (value instanceof ObjectNode) {
                 value = mapper.convertValue(getValueFromObject(value, key), JsonNode.class);
-                if (value.isNull()) {
+                if (value == null || value.isNull()) {
                     return value;
                 }
             } else if (key.equalsIgnoreCase("FromPort") || key.equalsIgnoreCase("ToPort")) {
@@ -152,7 +167,7 @@ public class CloudFormationTemplateProcessor {
         String refValue = node.get("Ref").textValue();
         JsonNode refObject = jsonRoot.findValue(refValue);
         JsonNode nodeType = refObject.get("Type");
-        //First check if object referance is SecurityGroup resource
+        //First check if object reference is SecurityGroup resource
         if (nodeType.textValue().equalsIgnoreCase(SECURITY_GROUP_TYPE)) {
             try {
                 return refObject.findValue(key).textValue();
@@ -180,62 +195,40 @@ public class CloudFormationTemplateProcessor {
      * If the default element exists the method will return the default information but if not the method will
      * try to generate IP address and CIDR based on the regex in the AllowedPattern argument.
      */
-    private String getCidrIpFromParam(JsonNode cidrIpRefData) throws IOException{
+    private String getCidrIpFromParam(JsonNode cidrIpRefData) throws IOException {
         if (cidrIpRefData.has(DEFAULT)) {
             return cidrIpRefData.get(DEFAULT).textValue();
+        } else if (cidrIpRefData.has(CIDR_IP)) {
+            return cidrIpRefData.get(CIDR_IP).textValue();
+        } else if (cidrIpRefData.has(ALLOWED_PATTERN)) {
+            String regex = cidrIpRefData.get(ALLOWED_PATTERN).textValue();
+            regex = regex.replaceAll("\\^| $|\\n |\\$", "");
+            Generex generex = new Generex(regex);
+            //        String secondString = generex.getMatchedString(1);
+            //        System.out.println(secondString);
+            //        Xeger generator = new Xeger(regex);
+            //        String result = generator.generate();
+            //        System.out.println(result);
+            return generex.random();
+        } else {
+            return null;
         }
-        String regex = cidrIpRefData.get("AllowedPattern").textValue();
-        regex = regex.replaceAll("\\^| $|\\n |\\$", "");
-        Generex generex = new Generex(regex);
-//        String secondString = generex.getMatchedString(1);
-//        System.out.println(secondString);
-//        Xeger generator = new Xeger(regex);
-//        String result = generator.generate();
-//        System.out.println(result);
-        return generex.random();
     }
 
     private TagPolicyViolationsCheckRequest getTagFromInstance(Map.Entry<String, JsonNode> instanceNode) {
         TagPolicyViolationsCheckRequest tagPolicyViolation = new TagPolicyViolationsCheckRequest();
-        tagPolicyViolation.setImage(getImageId(instanceNode.getValue()));
         tagPolicyViolation.setTags(getTags(instanceNode.getValue()));
         tagPolicyViolation.setName(instanceNode.getKey());
-//        JsonNode instanceProperties = instanceNode.getValue().findPath("Properties");
-//        Iterator<Map.Entry<String, JsonNode>> items = instanceProperties.fields();
-//        while (items.hasNext()) {
-//            Map.Entry<String, JsonNode> item = items.next();
-//            String key = item.getKey();
-//            JsonNode val = item.getValue();
-//            if (val instanceof ObjectNode) {
-//                System.out.println(val);
-//                String refValue = val.get("Ref").textValue();
-//                System.out.println(refValue);
-//                JsonNode refObject = jsonRoot.findValue(refValue);
-//                try {
-//                    System.out.println(refObject.findValue("Default").textValue());
-//                } catch (Exception ex) {
-//                    continue;
-//                }
-//
-//            }
-//        }
         return tagPolicyViolation;
-    }
-
-    private String getImageId(JsonNode node) {
-        JsonNode imageId = node.findPath("ImageId");
-        if (imageId instanceof ObjectNode) {
-            String refValue = imageId.get(REF).textValue();
-            JsonNode refObject = jsonRoot.findValue(refValue);
-            return refObject.findValue(DEFAULT).textValue();
-        }
-        return node.textValue();
     }
 
     private Map<String,String> getTags(JsonNode node) {
         Map<String, String> tagsMap = new HashMap<String, String>();
-        for (JsonNode tag: node.findValue("Tags"))
-            tagsMap.put(tag.get("Key").textValue(), tag.get("Value").textValue());
+        JsonNode tagsNode = node.findValue(TAGS);
+        if (tagsNode != null) {
+            for (JsonNode tag : tagsNode)
+                tagsMap.put(tag.get("Key").textValue(), tag.get("Value").textValue());
+        }
         return tagsMap;
     }
 }

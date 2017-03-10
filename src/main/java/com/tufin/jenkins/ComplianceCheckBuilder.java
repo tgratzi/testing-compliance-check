@@ -119,6 +119,7 @@ public class ComplianceCheckBuilder extends Builder {
         PrintStream logger = listener.getLogger();
         int severityLevel = 0;
         boolean is_processed = false;
+        logger.println(String.format("Policy id %s", policyId));
         try {
             ViolationHelper violation = new ViolationHelper(logger);
             logger.println(String.format("Building HTTP connection to host '%s'", host));
@@ -149,16 +150,20 @@ public class ComplianceCheckBuilder extends Builder {
                 if (cf.getIsCloudformation()) {
                     is_processed = true;
                     logger.println("Checking USP violation for AWS security groups");
-                    severityLevel = violation.checkUspViolation(cf, stHelper, violation);
+                    severityLevel = violation.checkUspViolation(cf, stHelper);
                     if (environment.equalsIgnoreCase(PROD_ENVIRONMENT) && severityLevel >= Severity.getSeverityValueByName(severity.toUpperCase())) {
                         logger.println("----------------------------------------------------------------------");
                         return false;
                     }
-                    logger.println("Checking policy TAGs violation for AWS Instances");
-                    severityLevel = violation.checkTagPolicyViolation(cf, stHelper, violation, "tp-102");
-                    if (environment.equalsIgnoreCase(PROD_ENVIRONMENT) && severityLevel >= Severity.getSeverityValueByName(severity.toUpperCase())) {
-                        logger.println("----------------------------------------------------------------------");
-                        return false;
+                    if (! policyId.isEmpty()) {
+                        logger.println("Checking policy TAGs violation for AWS Instances");
+                        severityLevel = violation.checkTagPolicyViolation(cf, stHelper, policyId);
+                        if (environment.equalsIgnoreCase(PROD_ENVIRONMENT) && severityLevel >= Severity.getSeverityValueByName(severity.toUpperCase())) {
+                            logger.println("----------------------------------------------------------------------");
+                            return false;
+                        }
+                    } else {
+                        logger.println("Policy check TAG did not run due to missing policy ID");
                     }
                     logger.println("----------------------------------------------------------------------");
                 } else {
