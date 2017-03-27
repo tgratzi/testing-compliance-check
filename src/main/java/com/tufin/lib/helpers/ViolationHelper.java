@@ -44,13 +44,8 @@ public class ViolationHelper {
         this.logger = logger;
     }
 
-//    public ViolationHelper(Level level, OutputStream outputStream) {
-//        BuildComplianceLog complianceLog = new BuildComplianceLog(getClass().getName(), level, outputStream);
-//        this.logger = complianceLog.getLogger();
-//    }
-
     public SecurityPolicyViolationsForMultiAr getUSPAccessRequestViolation(HttpHelper stHelper, String str) throws IOException{
-        System.out.println("Checking USP access request violation");
+//        logger.println("Checking USP access request violation");
         SecurityPolicyViolationsForMultiAr violationMultiAr = null;
         JSONObject response = stHelper.post(USP_URL, str, APPLICATION_XML);
         violationMultiAr = new SecurityPolicyViolationsForMultiAr(response);
@@ -67,9 +62,9 @@ public class ViolationHelper {
 
     public TagPolicyDetailedResponse getTagPolicies(HttpHelper stHelper) throws IOException {
         JSONObject response = stHelper.get(POLICY_URL);
-        TagPolicyDetailedResponse tagPolicyDetailedResponse = new TagPolicyDetailedResponse(response);
+//        TagPolicyDetailedResponse tagPolicyDetailedResponse = new TagPolicyDetailedResponse(response);
 //        Map<String,String> policyNameId = tagPolicyDetailedResponse.getAllPolicyId();
-        return tagPolicyDetailedResponse;
+        return new TagPolicyDetailedResponse(response);
     }
 
     private String formatMessage(String securityGroupName, String direction, AccessRequest accessRequest, String status) {
@@ -105,11 +100,13 @@ public class ViolationHelper {
                 String accessRequestStr = rule.accessRequestBuilder(ar);
                 SecurityPolicyViolationsForMultiAr violationMultiAr = getUSPAccessRequestViolation(stHelper, accessRequestStr);
                 if (violationMultiAr.getSecurityPolicyViolationsForAr().isViolated()) {
-                    Violation violationResult = violationMultiAr.getSecurityPolicyViolationsForAr().getViolations();
-                    int violatedSeverity = Severity.getSeverityValueByName(violationResult.getSeverity().toUpperCase());
-                    severityLevel =  violatedSeverity > severityLevel ? violatedSeverity : severityLevel;
-                    logger.println(formatMessage(securityGroupRule.getKey(), direction, ar, "VIOLATION FOUND"));
-                    return severityLevel;
+                    List<Violation> violationResults = violationMultiAr.getSecurityPolicyViolationsForAr().getViolations();
+                    for (Violation violation: violationResults) {
+                        int violatedSeverity = Severity.getSeverityValueByName(violation.getSeverity().toUpperCase());
+                        severityLevel =  violatedSeverity > severityLevel ? violatedSeverity : severityLevel;
+                        logger.println(formatMessage(securityGroupRule.getKey(), direction, ar, "VIOLATION FOUND"));
+                        return severityLevel;
+                    }
                 }
             }
         }
