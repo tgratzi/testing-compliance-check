@@ -121,7 +121,8 @@ public class HttpHelper {
             if (status >= 200 && status < 300) {
                 returnData = getJsonFromHttpResponse(response);
             } else {
-                String msg = "HTTP status: " + status + ", \nResponse: " + EntityUtils.toString(response.getEntity());
+                String msg = "HTTP status: " + status + ", " + username + ", " + url +
+                        "\nResponse: " + EntityUtils.toString(response.getEntity());
                 throw new IOException(msg);
             }
         } catch (Exception ex) {
